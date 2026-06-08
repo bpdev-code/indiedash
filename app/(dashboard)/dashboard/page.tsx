@@ -60,7 +60,7 @@ export default async function DashboardPage({
   }
 
   return (
-    <div className="w-full space-y-6 md:space-y-8">
+    <div className="max-w-3xl w-full space-y-6 md:space-y-8">
       <div>
         <p className="text-xs tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>
           MONTHLY RECURRING REVENUE

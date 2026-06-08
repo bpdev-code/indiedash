@@ -45,7 +45,7 @@ export default function MRRChart({ data, projects }: Props) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={220}>
+    <ResponsiveContainer width="100%" height={180}>
       <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid stroke="#1a1a1a" vertical={false} />
         <XAxis
