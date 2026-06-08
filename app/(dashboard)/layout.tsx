@@ -13,8 +13,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>
-      {/* Sidebar */}
-      <aside className="w-48 flex flex-col border-r py-6 px-4" style={{ borderColor: 'var(--border)' }}>
+
+      {/* サイドバー（デスクトップのみ） */}
+      <aside className="hidden md:flex w-48 flex-col border-r py-6 px-4 flex-shrink-0"
+        style={{ borderColor: 'var(--border)' }}>
         <Link href="/dashboard" className="text-sm font-bold tracking-wider mb-8">
           INDIE<span style={{ color: 'var(--accent)' }}>DASH</span>
         </Link>
@@ -34,17 +36,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </Link>
         </nav>
 
-        {/* Plan badge + logout */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs px-2 py-0.5 rounded font-bold"
-              style={{
-                background: profile?.plan === 'pro' ? 'var(--accent)' : 'var(--border)',
-                color: profile?.plan === 'pro' ? '#000' : 'var(--text-muted)',
-              }}>
-              {profile?.plan?.toUpperCase() ?? 'FREE'}
-            </span>
-          </div>
+          <span className="text-xs px-2 py-0.5 rounded font-bold"
+            style={{
+              background: profile?.plan === 'pro' ? 'var(--accent)' : 'var(--border)',
+              color: profile?.plan === 'pro' ? '#000' : 'var(--text-muted)',
+            }}>
+            {profile?.plan?.toUpperCase() ?? 'FREE'}
+          </span>
           <form action={signOut}>
             <button type="submit" className="text-xs w-full text-left px-3 py-2 rounded hover:bg-[#111] transition-colors"
               style={{ color: 'var(--text-dim)' }}>
@@ -54,8 +53,51 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 p-8 overflow-auto">{children}</main>
+      {/* メインコンテンツ */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* モバイルヘッダー */}
+        <header className="md:hidden flex items-center justify-between px-4 py-3 border-b"
+          style={{ borderColor: 'var(--border)' }}>
+          <Link href="/dashboard" className="text-sm font-bold tracking-wider">
+            INDIE<span style={{ color: 'var(--accent)' }}>DASH</span>
+          </Link>
+          <span className="text-xs px-2 py-0.5 rounded font-bold"
+            style={{
+              background: profile?.plan === 'pro' ? 'var(--accent)' : 'var(--border)',
+              color: profile?.plan === 'pro' ? '#000' : 'var(--text-muted)',
+            }}>
+            {profile?.plan?.toUpperCase() ?? 'FREE'}
+          </span>
+        </header>
+
+        <main className="flex-1 p-4 md:p-8 overflow-auto pb-24 md:pb-8">
+          {children}
+        </main>
+      </div>
+
+      {/* ボトムナビ（モバイルのみ） */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 flex border-t"
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+        {[
+          { href: '/dashboard', label: 'HOME', icon: '⬡' },
+          { href: '/projects', label: 'PROJECTS', icon: '◈' },
+          { href: '/settings', label: 'SETTINGS', icon: '◎' },
+        ].map(item => (
+          <Link key={item.href} href={item.href}
+            className="flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors"
+            style={{ color: 'var(--text-dim)' }}>
+            <span className="text-base">{item.icon}</span>
+            <span style={{ fontSize: 9, letterSpacing: 1 }}>{item.label}</span>
+          </Link>
+        ))}
+        <form action={signOut} className="flex-1">
+          <button type="submit" className="w-full flex flex-col items-center justify-center py-3 gap-1 text-xs"
+            style={{ color: 'var(--text-dim)' }}>
+            <span className="text-base">→</span>
+            <span style={{ fontSize: 9, letterSpacing: 1 }}>LOGOUT</span>
+          </button>
+        </form>
+      </nav>
     </div>
   )
 }

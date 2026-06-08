@@ -54,28 +54,33 @@ export default async function ProjectsPage() {
       ) : (
         <div className="space-y-2">
           {(projects ?? []).map(p => (
-            <div key={p.id} className="flex items-center gap-3 p-3 rounded"
+            <div key={p.id} className="p-3 rounded"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', opacity: p.status === 'archived' ? 0.5 : 1 }}>
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm truncate">{p.name}</p>
-                {p.launch_month && (
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>{p.launch_month}</p>
-                )}
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm truncate">{p.name}</p>
+                  {p.launch_month && (
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>{p.launch_month}</p>
+                  )}
+                </div>
+                <span className="text-sm font-bold" style={{ color: p.color }}>
+                  ¥{(p.mrr ?? 0).toLocaleString()}
+                </span>
               </div>
-              <span className="text-xs px-2 py-0.5 rounded"
-                style={{ color: STATUS_COLOR[p.status], background: '#111' }}>
-                {STATUS_LABEL[p.status]}
-              </span>
-              <span className="text-sm font-bold w-20 text-right" style={{ color: p.color }}>
-                ¥{(p.mrr ?? 0).toLocaleString()}
-              </span>
-              <Link href={`/projects/${p.id}/edit`}
-                className="text-xs px-2 py-1 rounded hover:bg-[#222] transition-colors"
-                style={{ color: 'var(--text-muted)' }}>
-                EDIT
-              </Link>
-              <DeleteButton id={p.id} name={p.name} />
+              <div className="flex items-center gap-2 mt-2 pl-5">
+                <span className="text-xs px-2 py-0.5 rounded"
+                  style={{ color: STATUS_COLOR[p.status], background: '#111' }}>
+                  {STATUS_LABEL[p.status]}
+                </span>
+                <div className="flex-1" />
+                <Link href={`/projects/${p.id}/edit`}
+                  className="text-xs px-2 py-1 rounded hover:bg-[#222] transition-colors"
+                  style={{ color: 'var(--text-muted)' }}>
+                  EDIT
+                </Link>
+                <DeleteButton id={p.id} name={p.name} />
+              </div>
             </div>
           ))}
         </div>
