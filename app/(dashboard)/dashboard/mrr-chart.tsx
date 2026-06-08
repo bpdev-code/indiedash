@@ -23,7 +23,6 @@ interface Props {
 }
 
 function formatYAxis(v: number) {
-  if (v >= 10000) return `¥${(v / 10000).toFixed(0)}万`
   if (v >= 1000) return `¥${(v / 1000).toFixed(0)}k`
   return `¥${v}`
 }
