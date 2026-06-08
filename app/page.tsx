@@ -1,65 +1,244 @@
-import Image from "next/image";
+import Link from 'next/link'
 
-export default function Home() {
+const APP_URL = '/signup'
+
+// シンプルなSVGグラフ
+function MRRGraph() {
+  const data = [4200, 6800, 8100, 11200, 15600, 19800, 24500]
+  const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月']
+  const max = Math.max(...data)
+  const w = 400
+  const h = 120
+  const pad = { top: 10, right: 10, bottom: 20, left: 10 }
+  const iw = w - pad.left - pad.right
+  const ih = h - pad.top - pad.bottom
+
+  const points = data.map((v, i) => ({
+    x: pad.left + (i / (data.length - 1)) * iw,
+    y: pad.top + ih - (v / max) * ih,
+  }))
+
+  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+  const area = `${path} L ${points[points.length - 1].x} ${h - pad.bottom} L ${points[0].x} ${h - pad.bottom} Z`
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: 120 }}>
+      <defs>
+        <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#00E5FF" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#00E5FF" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* グリッド */}
+      {[0.25, 0.5, 0.75].map(r => (
+        <line key={r} x1={pad.left} y1={pad.top + ih * (1 - r)} x2={w - pad.right} y2={pad.top + ih * (1 - r)}
+          stroke="#1a1a1a" strokeWidth="1" />
+      ))}
+      {/* エリア */}
+      <path d={area} fill="url(#grad)" />
+      {/* ライン */}
+      <path d={path} fill="none" stroke="#00E5FF" strokeWidth="2" />
+      {/* ドット（最初と最後） */}
+      <circle cx={points[0].x} cy={points[0].y} r="3" fill="#00E5FF" />
+      <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="4" fill="#00E5FF" />
+      {/* X軸ラベル */}
+      {months.map((m, i) => (
+        <text key={m} x={pad.left + (i / (data.length - 1)) * iw} y={h - 4}
+          textAnchor="middle" fontSize="8" fill="#444">{m}</text>
+      ))}
+    </svg>
+  )
+}
+
+export default function LandingPage() {
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+        <span className="text-lg font-bold tracking-wider">
+          INDIE<span style={{ color: 'var(--accent)' }}>DASH</span>
+        </span>
+        <div className="flex items-center gap-4 text-sm">
+          <Link href="/login" style={{ color: 'var(--text-muted)' }}>Login</Link>
+          <Link href={APP_URL} className="px-4 py-1.5 rounded text-xs font-bold"
+            style={{ background: 'var(--accent)', color: '#000' }}>
+            無料で始める
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="flex flex-col items-center justify-center px-4 py-24 text-center">
+        <p className="text-xs tracking-widest mb-6" style={{ color: 'var(--accent)' }}>FOR INDIE HACKERS</p>
+        <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+          複数アプリの収益を、<br />1つのURLで公開。
+        </h1>
+        <p className="text-sm max-w-lg mb-3" style={{ color: 'var(--text-muted)' }}>
+          毎月Xで収益報告していますか？スクショを撮って、数字をまとめて、テキストを書いて——
+        </p>
+        <p className="text-sm max-w-lg mb-10 font-bold">
+          INDIEDASHなら、URLを貼るだけで終わります。
+        </p>
+        <Link href={APP_URL} className="px-10 py-3 rounded font-bold text-sm mb-3"
+          style={{ background: 'var(--accent)', color: '#000' }}>
+          無料で始める →
+        </Link>
+        <p className="text-xs" style={{ color: 'var(--text-dim)' }}>クレジットカード不要</p>
+
+        {/* Dashboard Preview */}
+        <div className="mt-16 w-full max-w-lg rounded-lg overflow-hidden"
+          style={{ border: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-2 px-4 py-3"
+            style={{ background: '#0d0d0d', borderBottom: '1px solid var(--border)' }}>
+            <div className="w-3 h-3 rounded-full" style={{ background: '#333' }} />
+            <div className="w-3 h-3 rounded-full" style={{ background: '#333' }} />
+            <div className="w-3 h-3 rounded-full" style={{ background: '#333' }} />
+            <span className="text-xs ml-2" style={{ color: 'var(--text-dim)' }}>
+              indiedash.app/public/takumi
+            </span>
+          </div>
+          <div className="p-6 text-left" style={{ background: 'var(--bg)' }}>
+            <p className="text-xs tracking-widest mb-1" style={{ color: 'var(--text-dim)' }}>MRR</p>
+            <p className="text-4xl font-bold mb-4" style={{ color: 'var(--accent)' }}>¥24,500</p>
+            <MRRGraph />
+            <div className="space-y-2 mt-4">
+              {[
+                { name: 'タスク管理アプリ', mrr: 9800, color: '#00E5FF' },
+                { name: '請求書作成ツール', mrr: 14700, color: '#7C3AED' },
+              ].map(p => (
+                <div key={p.name} className="flex items-center gap-3 p-3 rounded text-xs"
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                  <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+                  <span style={{ color: 'var(--text-muted)' }}>{p.name}</span>
+                  <span className="ml-auto font-bold" style={{ color: p.color }}>¥{p.mrr.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs mt-4 text-right" style={{ color: 'var(--text-dim)' }}>Powered by INDIEDASH</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Stripe連携 */}
+      <section className="px-6 py-20 border-t" style={{ borderColor: 'var(--border)' }}>
+        <div className="max-w-2xl mx-auto">
+          <p className="text-xs tracking-widest mb-3 text-center" style={{ color: 'var(--accent)' }}>STRIPE INTEGRATION</p>
+          <h2 className="text-2xl font-bold mb-3 text-center">Stripeと繋いで、自動化する</h2>
+          <p className="text-sm text-center mb-12" style={{ color: 'var(--text-muted)' }}>
+            制限付きAPIキーを貼り付けるだけ。MRRが自動で同期される。
           </p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {[
+              { step: '01', title: 'キーを作成', desc: 'Stripeで読み取り専用の制限付きキーを作成（1分）' },
+              { step: '02', title: 'INDIEDASHに貼り付け', desc: 'プロジェクト設定にキーを貼り付けて「連携」をクリック' },
+              { step: '03', title: '自動同期完了', desc: 'サブスクリプションのMRRが自動で取得・グラフに反映' },
+            ].map(s => (
+              <div key={s.step} className="p-5 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                <p className="text-2xl font-bold mb-3" style={{ color: 'var(--accent)' }}>{s.step}</p>
+                <p className="text-xs font-bold mb-2">{s.title}</p>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* 課題 */}
+      <section className="px-6 py-20 border-t" style={{ borderColor: 'var(--border)' }}>
+        <div className="max-w-2xl mx-auto">
+          <p className="text-xs tracking-widest mb-8 text-center" style={{ color: 'var(--text-dim)' }}>PROBLEM</p>
+          <div className="space-y-3">
+            {[
+              '複数アプリの収益をスプレッドシートで管理している',
+              '毎月Xで収益報告するのに時間がかかる',
+              'Baremetricsは高すぎる（$129/月〜）',
+              '日本語対応のツールがない',
+            ].map(t => (
+              <div key={t} className="flex items-center gap-3 text-sm p-4 rounded"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                <span style={{ color: '#ff4444' }}>×</span>
+                <span style={{ color: 'var(--text-muted)' }}>{t}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* 特徴 */}
+      <section className="px-6 py-20 border-t" style={{ borderColor: 'var(--border)' }}>
+        <div className="max-w-2xl mx-auto">
+          <p className="text-xs tracking-widest mb-8 text-center" style={{ color: 'var(--text-dim)' }}>FEATURES</p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {[
+              { title: '複数アプリを一元管理', desc: '全プロダクトのMRRをひとつのダッシュボードに集約。プロジェクトごとにグラフで推移を確認。' },
+              { title: 'Stripe連携で自動更新', desc: '制限付きAPIキーを登録するだけ。サブスクMRRが自動で取得・記録される。' },
+              { title: '公開URLで即シェア', desc: 'indiedash.app/public/yourname を作成。URLを貼るだけでXに共有できる。' },
+              { title: 'OGP画像を自動生成', desc: 'XにURLを貼るとMRRカードが自動展開。毎月の収益報告が10秒で終わる。' },
+            ].map(f => (
+              <div key={f.title} className="p-5 rounded"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                <p className="text-xs font-bold mb-2" style={{ color: 'var(--accent)' }}>{f.title}</p>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 価格比較 */}
+      <section className="px-6 py-20 border-t" style={{ borderColor: 'var(--border)' }}>
+        <div className="max-w-2xl mx-auto">
+          <p className="text-xs tracking-widest mb-8 text-center" style={{ color: 'var(--text-dim)' }}>PRICING</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  {['ツール', '価格', '複数アプリ', '公開URL', '日本語'].map(h => (
+                    <th key={h} className={`py-3 ${h === 'ツール' ? 'text-left' : 'text-center'}`}
+                      style={{ color: 'var(--text-dim)' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { name: 'Baremetrics', price: '$129/月〜', multi: '△', pub: '✗', ja: '✗', highlight: false },
+                  { name: 'INDIEDASH', price: '¥480/月〜', multi: '◎', pub: '◎', ja: '◎', highlight: true },
+                ].map(r => (
+                  <tr key={r.name} style={{
+                    borderBottom: '1px solid var(--border)',
+                    background: r.highlight ? '#0a1a0a' : 'transparent',
+                  }}>
+                    <td className="py-3 font-bold" style={{ color: r.highlight ? 'var(--accent)' : 'var(--text-muted)' }}>{r.name}</td>
+                    <td className="py-3 text-center" style={{ color: r.highlight ? 'var(--accent)' : 'var(--text-muted)' }}>{r.price}</td>
+                    <td className="py-3 text-center" style={{ color: r.highlight ? '#10B981' : 'var(--text-dim)' }}>{r.multi}</td>
+                    <td className="py-3 text-center" style={{ color: r.highlight ? '#10B981' : 'var(--text-dim)' }}>{r.pub}</td>
+                    <td className="py-3 text-center" style={{ color: r.highlight ? '#10B981' : 'var(--text-dim)' }}>{r.ja}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="px-6 py-24 border-t text-center" style={{ borderColor: 'var(--border)' }}>
+        <h2 className="text-2xl font-bold mb-4">今すぐ収益を公開しよう</h2>
+        <p className="text-sm mb-8" style={{ color: 'var(--text-muted)' }}>
+          無料プランで今すぐ使える。Stripe連携・公開URL対応。
+        </p>
+        <Link href={APP_URL} className="inline-block px-10 py-3 rounded font-bold text-sm"
+          style={{ background: 'var(--accent)', color: '#000' }}>
+          無料で始める →
+        </Link>
+        <p className="text-xs mt-4" style={{ color: 'var(--text-dim)' }}>クレジットカード不要</p>
+      </section>
+
+      <footer className="border-t py-6 text-center text-xs"
+        style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}>
+        © 2026 INDIEDASH
+      </footer>
     </div>
-  );
+  )
 }
