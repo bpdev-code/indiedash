@@ -18,7 +18,9 @@ function generateMonthsBetween(from: string, to: string): string[] {
   return months
 }
 
-async function upsertRevenueHistory(
+// プロジェクト新規作成時のみ使用: launch_month から現在月までをバックフィル
+// ignoreDuplicates: true で既存データを上書きしない
+async function backfillRevenueHistory(
   supabase: Awaited<ReturnType<typeof createClient>>,
   projectId: string,
   mrr: number,
@@ -30,6 +32,19 @@ async function upsertRevenueHistory(
 
   await supabase.from('revenue_history').upsert(
     months.map(month => ({ project_id: projectId, month, mrr })),
+    { onConflict: 'project_id,month', ignoreDuplicates: true }
+  )
+}
+
+// プロジェクト更新時のみ使用: 当月のみ記録（過去の履歴を上書きしない）
+async function recordCurrentMonthRevenue(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  projectId: string,
+  mrr: number,
+) {
+  const currentMonth = new Date().toISOString().slice(0, 7)
+  await supabase.from('revenue_history').upsert(
+    { project_id: projectId, month: currentMonth, mrr },
     { onConflict: 'project_id,month' }
   )
 }
@@ -72,8 +87,8 @@ export async function createProject(formData: FormData) {
 
   if (error) return { error: error.message }
 
-  if (mrr > 0 && project) {
-    await upsertRevenueHistory(supabase, project.id, mrr, launch_month)
+  if (project) {
+    await backfillRevenueHistory(supabase, project.id, mrr, launch_month)
   }
 
   revalidatePath('/dashboard')
@@ -107,13 +122,42 @@ export async function updateProject(id: string, formData: FormData) {
 
   if (error) return { error: error.message }
 
-  if (mrr > 0) {
-    await upsertRevenueHistory(supabase, id, mrr, launch_month)
-  }
+  // 当月のみ更新（過去の成長履歴を保持する）
+  await recordCurrentMonthRevenue(supabase, id, mrr)
 
   revalidatePath('/dashboard')
   revalidatePath('/projects')
   redirect('/projects')
+}
+
+export async function updateRevenueHistory(
+  projectId: string,
+  history: { month: string; mrr: number }[]
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: project } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!project) return { error: 'プロジェクトが見つかりません' }
+
+  const { error } = await supabase
+    .from('revenue_history')
+    .upsert(
+      history.map(h => ({ project_id: projectId, month: h.month, mrr: Math.max(0, h.mrr) })),
+      { onConflict: 'project_id,month' }
+    )
+
+  if (error) return { error: error.message }
+  revalidatePath('/dashboard')
+  revalidatePath('/projects')
+  return { success: true }
 }
 
 export async function deleteProject(id: string) {

@@ -20,6 +20,9 @@ create table projects (
   color text default '#00E5FF',
   mrr integer default 0,
   users_count integer default 0,
+  price integer default null,
+  payment_provider text default 'manual',
+  stripe_secret_key text,
   stripe_product_id text,
   launch_month text,
   created_at timestamptz default now()

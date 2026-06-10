@@ -2,9 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
-  // Supabase未設定時はそのまま通過（開発初期確認用）
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.startsWith('http')) {
-    return NextResponse.next({ request })
+    return new NextResponse('Server configuration error', { status: 500 })
   }
 
   let supabaseResponse = NextResponse.next({ request })

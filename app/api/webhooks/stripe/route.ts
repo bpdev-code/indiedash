@@ -13,7 +13,9 @@ function getSupabaseAdmin() {
 export async function POST(req: NextRequest) {
   const body = await req.text()
   const headersList = await headers()
-  const sig = headersList.get('stripe-signature')!
+  const sig = headersList.get('stripe-signature')
+
+  if (!sig) return new Response('Missing stripe-signature', { status: 400 })
 
   let event
   try {
@@ -26,12 +28,24 @@ export async function POST(req: NextRequest) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
-    const userId = session.metadata?.user_id
-    if (userId) {
+    // 一回払いはサブスクリプションではないので無視
+    if (session.mode !== 'subscription') return Response.json({ received: true })
+
+    const customerId = session.customer as string
+    if (!customerId) return Response.json({ received: true })
+
+    // metadata.user_id は攻撃者が操作できるため、customer_id で本人確認する
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('stripe_customer_id', customerId)
+      .single()
+
+    if (profile) {
       await supabaseAdmin
         .from('profiles')
-        .update({ plan: 'pro', stripe_customer_id: session.customer as string })
-        .eq('id', userId)
+        .update({ plan: 'pro' })
+        .eq('id', profile.id)
     }
   }
 
@@ -47,6 +61,23 @@ export async function POST(req: NextRequest) {
       await supabaseAdmin
         .from('profiles')
         .update({ plan: 'free' })
+        .eq('id', profile.id)
+    }
+  }
+
+  if (event.type === 'customer.subscription.updated') {
+    const subscription = event.data.object
+    const isActive = subscription.status === 'active'
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('stripe_customer_id', subscription.customer as string)
+      .single()
+
+    if (profile) {
+      await supabaseAdmin
+        .from('profiles')
+        .update({ plan: isActive ? 'pro' : 'free' })
         .eq('id', profile.id)
     }
   }

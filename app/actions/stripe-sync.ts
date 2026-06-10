@@ -77,6 +77,10 @@ export async function syncStripeMRR(projectId: string) {
         let monthlyAmount = amount * quantity
         if (price.recurring?.interval === 'year') {
           monthlyAmount = Math.round(monthlyAmount / 12)
+        } else if (price.recurring?.interval === 'week') {
+          monthlyAmount = Math.round(monthlyAmount * 52 / 12)
+        } else if (price.recurring?.interval === 'day') {
+          monthlyAmount = Math.round(monthlyAmount * 365 / 12)
         }
 
         // JPY以外は100で割る（cents → ドル等）
