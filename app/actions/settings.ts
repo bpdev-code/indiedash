@@ -49,33 +49,41 @@ export async function updatePublicSettings(formData: FormData) {
 }
 
 export async function createStripeCheckout() {
+  if (!process.env.STRIPE_SECRET_KEY) return { error: 'Stripe が設定されていません' }
+  if (!process.env.STRIPE_PRO_PRICE_ID) return { error: 'プランIDが設定されていません' }
+  if (!process.env.NEXT_PUBLIC_APP_URL) return { error: 'APP_URL が設定されていません' }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: '未ログイン' }
 
-  const { stripe } = await import('@/lib/stripe')
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('stripe_customer_id, email')
-    .eq('id', user.id)
-    .single()
+  try {
+    const { stripe } = await import('@/lib/stripe')
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('stripe_customer_id, email')
+      .eq('id', user.id)
+      .single()
 
-  let customerId = profile?.stripe_customer_id
-  if (!customerId) {
-    const customer = await stripe.customers.create({ email: profile?.email })
-    customerId = customer.id
-    await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user.id)
+    let customerId = profile?.stripe_customer_id
+    if (!customerId) {
+      const customer = await stripe.customers.create({ email: profile?.email ?? undefined })
+      customerId = customer.id
+      await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user.id)
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [{ price: process.env.STRIPE_PRO_PRICE_ID, quantity: 1 }],
+      mode: 'subscription',
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?upgraded=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
+    })
+
+    return { url: session.url }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'エラーが発生しました'
+    return { error: message }
   }
-
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
-    payment_method_types: ['card'],
-    line_items: [{ price: process.env.STRIPE_PRO_PRICE_ID!, quantity: 1 }],
-    mode: 'subscription',
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?upgraded=true`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
-    metadata: { user_id: user.id },
-  })
-
-  return { url: session.url }
 }

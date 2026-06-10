@@ -6,10 +6,15 @@ type Props = { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
+  const ogImage = `${process.env.NEXT_PUBLIC_APP_URL}/public/${slug}/opengraph-image`
   return {
     title: `${slug} — INDIEDASH`,
     openGraph: {
-      images: [`${process.env.NEXT_PUBLIC_APP_URL}/public/${slug}/opengraph-image`],
+      images: [ogImage],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: [ogImage],
     },
   }
 }

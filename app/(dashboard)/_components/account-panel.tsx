@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useTransition, useState } from 'react'
 import { createStripeCheckout } from '@/app/actions/settings'
 import { signOut } from '@/app/actions/auth'
 
@@ -12,10 +12,17 @@ type Props = {
 export function AccountPanel({ profile, settings }: Props) {
   const [isPending, startTransition] = useTransition()
 
+  const [upgradeError, setUpgradeError] = useState<string | null>(null)
+
   function handleUpgrade() {
+    setUpgradeError(null)
     startTransition(async () => {
       const result = await createStripeCheckout()
-      if (result?.url) window.location.href = result.url
+      if (result?.url) {
+        window.location.href = result.url
+      } else if (result?.error) {
+        setUpgradeError(result.error)
+      }
     })
   }
 
@@ -37,13 +44,18 @@ export function AccountPanel({ profile, settings }: Props) {
           {profile?.plan === 'pro' ? 'PRO' : 'FREE'}
         </div>
         {profile?.plan === 'free' && (
-          <button
-            onClick={handleUpgrade}
-            disabled={isPending}
-            className="w-full text-xs py-2 rounded font-bold transition-opacity"
-            style={{ background: 'var(--accent)', color: '#000', opacity: isPending ? 0.6 : 1 }}>
-            {isPending ? '...' : 'PRO にアップグレード'}
-          </button>
+          <>
+            <button
+              onClick={handleUpgrade}
+              disabled={isPending}
+              className="w-full text-xs py-2 rounded font-bold transition-opacity"
+              style={{ background: 'var(--accent)', color: '#000', opacity: isPending ? 0.6 : 1 }}>
+              {isPending ? '...' : 'PRO にアップグレード'}
+            </button>
+            {upgradeError && (
+              <p className="text-[10px] mt-2" style={{ color: '#ff4444' }}>{upgradeError}</p>
+            )}
+          </>
         )}
       </div>
 
