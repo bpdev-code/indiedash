@@ -1,20 +1,21 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from '@/app/actions/auth'
+import { AccountPanel } from './_components/account-panel'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('plan, slug')
-    .eq('id', user!.id)
-    .single()
+
+  const [{ data: profile }, { data: settings }] = await Promise.all([
+    supabase.from('profiles').select('plan, slug, email').eq('id', user!.id).single(),
+    supabase.from('public_settings').select('is_public').eq('user_id', user!.id).maybeSingle(),
+  ])
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>
 
-      {/* サイドバー（デスクトップのみ） */}
+      {/* 左サイドバー（デスクトップのみ） */}
       <aside className="hidden md:flex w-48 flex-col border-r py-6 px-4 flex-shrink-0"
         style={{ borderColor: 'var(--border)' }}>
         <Link href="/dashboard" className="text-sm font-bold tracking-wider mb-8">
@@ -74,6 +75,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {children}
         </main>
       </div>
+
+      {/* 右サイドバー（lg以上のみ） */}
+      <aside className="hidden lg:flex w-64 flex-col border-l flex-shrink-0"
+        style={{ borderColor: 'var(--border)' }}>
+        <AccountPanel profile={profile} settings={settings} />
+      </aside>
 
       {/* ボトムナビ（モバイルのみ） */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 flex border-t"
