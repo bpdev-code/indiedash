@@ -9,6 +9,9 @@ export async function connectStripe(projectId: string, secretKey: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: '未ログイン' }
 
+  const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
+  if (profile?.plan !== 'pro') return { error: 'Stripe連携はPROプランのみご利用いただけます' }
+
   // キーの形式チェック
   if (!secretKey.startsWith('sk_') && !secretKey.startsWith('rk_')) {
     return { error: 'Stripeのキーは sk_ または rk_ で始まります' }
@@ -135,17 +138,16 @@ export async function disconnectStripe(projectId: string) {
 export async function getStripeStatus(projectId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { connected: false }
+  if (!user) return { connected: false, mrr: 0, plan: 'free' }
 
-  const { data } = await supabase
-    .from('projects')
-    .select('stripe_secret_key, mrr')
-    .eq('id', projectId)
-    .eq('user_id', user.id)
-    .single()
+  const [{ data: project }, { data: profile }] = await Promise.all([
+    supabase.from('projects').select('stripe_secret_key, mrr').eq('id', projectId).eq('user_id', user.id).single(),
+    supabase.from('profiles').select('plan').eq('id', user.id).single(),
+  ])
 
   return {
-    connected: !!data?.stripe_secret_key,
-    mrr: data?.mrr ?? 0,
+    connected: !!project?.stripe_secret_key,
+    mrr: project?.mrr ?? 0,
+    plan: profile?.plan ?? 'free',
   }
 }

@@ -10,6 +10,7 @@ interface Props {
 export default function StripeConnect({ projectId }: Props) {
   const [connected, setConnected] = useState(false)
   const [mrr, setMrr] = useState(0)
+  const [plan, setPlan] = useState<string>('free')
   const [key, setKey] = useState('')
   const [showGuide, setShowGuide] = useState(false)
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null)
@@ -19,6 +20,7 @@ export default function StripeConnect({ projectId }: Props) {
     getStripeStatus(projectId).then(s => {
       setConnected(s.connected)
       setMrr(s.mrr)
+      setPlan(s.plan)
     })
   }, [projectId])
 
@@ -59,6 +61,21 @@ export default function StripeConnect({ projectId }: Props) {
       setMrr(0)
       setMessage({ text: '連携を解除しました', ok: true })
     })
+  }
+
+  if (plan === 'free' && !connected) {
+    return (
+      <div className="p-3 rounded space-y-1" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold" style={{ color: 'var(--text-dim)' }}>Stripe 連携</span>
+          <span className="text-[10px] px-2 py-0.5 rounded font-bold"
+            style={{ background: 'var(--accent)', color: '#000' }}>PRO</span>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
+          PROプランにアップグレードするとStripeから自動でMRRを取得できます
+        </p>
+      </div>
+    )
   }
 
   if (connected) {
