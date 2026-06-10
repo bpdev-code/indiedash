@@ -49,7 +49,10 @@ export async function updatePublicSettings(formData: FormData) {
 }
 
 export async function createStripeCheckout() {
-  if (!process.env.STRIPE_SECRET_KEY) return { error: 'Stripe が設定されていません' }
+  const stripeKey = process.env.STRIPE_SECRET_KEY
+  if (!stripeKey || stripeKey.startsWith('your_')) {
+    return { error: 'VercelにStripe APIキーを設定してください（Settings > Environment Variables > STRIPE_SECRET_KEY）' }
+  }
   if (!process.env.STRIPE_PRO_PRICE_ID) return { error: 'プランIDが設定されていません' }
   if (!process.env.NEXT_PUBLIC_APP_URL) return { error: 'APP_URL が設定されていません' }
 
