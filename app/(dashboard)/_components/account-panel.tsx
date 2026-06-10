@@ -77,7 +77,7 @@ export function AccountPanel({ profile, settings }: Props) {
                 COPY
               </button>
               <a
-                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(publicUrl)}&text=${encodeURIComponent('自分のプロダクト収益を公開しています #indiedash #個人開発')}`}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`自分のプロダクト収益を公開しています\n${publicUrl}\n#indiedash #個人開発`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 text-center text-[10px] py-1.5 rounded transition-colors hover:opacity-70"
