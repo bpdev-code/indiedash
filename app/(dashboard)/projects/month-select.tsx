@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 interface Props {
   defaultValue?: string | null
+  onChange?: (value: string) => void
 }
 
 function currentYM() {
@@ -14,7 +15,7 @@ function currentYM() {
 const YEARS = Array.from({ length: 8 }, (_, i) => new Date().getFullYear() - 5 + i)
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 
-export default function MonthSelect({ defaultValue }: Props) {
+export default function MonthSelect({ defaultValue, onChange }: Props) {
   const def = defaultValue
     ? { year: parseInt(defaultValue.split('-')[0]), month: parseInt(defaultValue.split('-')[1]) }
     : currentYM()
@@ -27,14 +28,22 @@ export default function MonthSelect({ defaultValue }: Props) {
     <div className="flex gap-2 items-center">
       <select
         value={year}
-        onChange={e => setYear(Number(e.target.value))}
+        onChange={e => {
+          const y = Number(e.target.value)
+          setYear(y)
+          onChange?.(`${y}-${String(month).padStart(2, '0')}`)
+        }}
         className="flex-1 px-3 py-2 text-sm rounded"
       >
         {YEARS.map(y => <option key={y} value={y}>{y}年</option>)}
       </select>
       <select
         value={month}
-        onChange={e => setMonth(Number(e.target.value))}
+        onChange={e => {
+          const m = Number(e.target.value)
+          setMonth(m)
+          onChange?.(`${year}-${String(m).padStart(2, '0')}`)
+        }}
         className="flex-1 px-3 py-2 text-sm rounded"
       >
         {MONTHS.map(m => <option key={m} value={m}>{m}月</option>)}

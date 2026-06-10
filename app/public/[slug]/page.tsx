@@ -9,7 +9,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${slug} — INDIEDASH`,
     openGraph: {
-      images: [`/public/${slug}/opengraph-image`],
+      images: [`${process.env.NEXT_PUBLIC_APP_URL}/public/${slug}/opengraph-image`],
     },
   }
 }

@@ -26,7 +26,13 @@ const STATUSES = [
   { value: 'archived', label: 'ARCHIVED — 終了' },
 ]
 
-export function EditProjectForm({ project }: { project: EditableProject }) {
+export function EditProjectForm({
+  project,
+  onLaunchMonthChange,
+}: {
+  project: EditableProject
+  onLaunchMonthChange?: (month: string) => void
+}) {
   const [error, setError] = useState<string | null>(null)
   const [color, setColor] = useState(project.color)
   const [provider, setProvider] = useState<PaymentProvider>(project.payment_provider ?? 'manual')
@@ -100,7 +106,7 @@ export function EditProjectForm({ project }: { project: EditableProject }) {
 
       <div>
         <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>ローンチ月</label>
-        <MonthSelect defaultValue={project.launch_month} />
+        <MonthSelect defaultValue={project.launch_month} onChange={onLaunchMonthChange} />
       </div>
 
       {error && <p className="text-xs" style={{ color: '#ff4444' }}>{error}</p>}

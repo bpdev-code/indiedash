@@ -26,7 +26,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
   const { data: projects } = await supabase
     .from('projects')
-    .select('*')
+    .select('id, name, mrr, color')
     .eq('user_id', profile.id)
     .eq('status', 'live')
 

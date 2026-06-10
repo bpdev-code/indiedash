@@ -58,7 +58,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-lg space-y-8">
+    <div className="max-w-lg mx-auto space-y-8">
       <h1 className="text-xs tracking-widest" style={{ color: 'var(--text-dim)' }}>SETTINGS</h1>
 
       {/* Plan */}

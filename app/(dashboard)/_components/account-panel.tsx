@@ -21,7 +21,7 @@ export function AccountPanel({ profile, settings }: Props) {
 
   const isPublic = settings?.is_public && profile?.slug
   const publicUrl = profile?.slug
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/public/${profile.slug}`
+    ? `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/public/${profile.slug}`
     : null
 
   return (
