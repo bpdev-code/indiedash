@@ -78,9 +78,17 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   }
 
   const maxTotal = Math.max(...chartData.map(d => d.total), 1)
-  const BAR_H = 60
   const hasHistory = chartData.some(d => d.total > 0)
   const fontData = await loadFont()
+
+  // SVG line chart paths
+  const CW = 1056, CH = 72, PX = 6, PY = 6
+  const chartPoints = chartData.map((d, i) => ({
+    x: PX + (chartData.length > 1 ? (i / (chartData.length - 1)) : 0.5) * (CW - PX * 2),
+    y: PY + (1 - d.total / maxTotal) * (CH - PY * 2),
+  }))
+  const linePath = chartPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  const areaPath = `${linePath} L${chartPoints[chartPoints.length - 1].x.toFixed(1)},${CH} L${chartPoints[0].x.toFixed(1)},${CH} Z`
 
   return new ImageResponse(
     (
@@ -106,34 +114,28 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           </span>
         </div>
 
-        {/* Bar Chart */}
+        {/* Line Chart */}
         {hasHistory && (
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 24 }}>
-            <span style={{ fontSize: 10, color: '#333', letterSpacing: 2, marginBottom: 10 }}>
-              MRR TREND (6 MONTHS)
+            <span style={{ fontSize: 10, color: '#333', letterSpacing: 2, marginBottom: 8 }}>
+              MRR TREND
             </span>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', height: BAR_H + 20 }}>
-              {chartData.map((d, i) => {
-                const barH = Math.max(2, Math.round((d.total / maxTotal) * BAR_H))
-                const isLatest = i === chartData.length - 1
-                return (
-                  <div key={i} style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    gap: 4, width: 160,
-                  }}>
-                    <div style={{
-                      width: 160,
-                      height: barH,
-                      background: isLatest ? '#00E5FF' : '#0a2a30',
-                      borderRadius: '3px 3px 0 0',
-                      border: isLatest ? 'none' : '1px solid #1a3a3f',
-                    }} />
-                    <span style={{ fontSize: 11, color: isLatest ? '#555' : '#333' }}>
-                      {parseInt(d.month.split('-')[1])}月
-                    </span>
-                  </div>
-                )
-              })}
+            <svg width={CW} height={CH} viewBox={`0 0 ${CW} ${CH}`} style={{ display: 'block' }}>
+              <path d={areaPath} fill="#00E5FF" fillOpacity="0.08" />
+              <path d={linePath} fill="none" stroke="#00E5FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              {chartPoints.map((p, i) => (
+                <circle key={i} cx={p.x} cy={p.y}
+                  r={i === chartPoints.length - 1 ? 5 : 3}
+                  fill={i === chartPoints.length - 1 ? '#00E5FF' : '#080808'}
+                  stroke="#00E5FF" strokeWidth="1.5" />
+              ))}
+            </svg>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6 }}>
+              {chartData.map((d, i) => (
+                <span key={i} style={{ fontSize: 11, color: i === chartData.length - 1 ? '#555' : '#2a2a2a' }}>
+                  {parseInt(d.month.split('-')[1])}月
+                </span>
+              ))}
             </div>
           </div>
         )}
