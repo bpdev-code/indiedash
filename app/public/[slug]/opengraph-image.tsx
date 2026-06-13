@@ -4,6 +4,20 @@ import { createClient } from '@/lib/supabase/server'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
+async function loadFont(): Promise<ArrayBuffer | null> {
+  try {
+    const css = await fetch(
+      'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700',
+      { headers: { 'User-Agent': 'Mozilla/5.0' } }
+    ).then(r => r.text())
+    const match = css.match(/src: url\(([^)]+)\)/)
+    if (!match) return null
+    return fetch(match[1]).then(r => r.arrayBuffer())
+  } catch {
+    return null
+  }
+}
+
 function getLast6Months(): string[] {
   const months = []
   const now = new Date()
@@ -66,13 +80,14 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const maxTotal = Math.max(...chartData.map(d => d.total), 1)
   const BAR_H = 60
   const hasHistory = chartData.some(d => d.total > 0)
+  const fontData = await loadFont()
 
   return new ImageResponse(
     (
       <div style={{
         width: 1200, height: 630, background: '#080808',
         display: 'flex', flexDirection: 'column',
-        padding: '56px 72px', fontFamily: 'monospace',
+        padding: '56px 72px', fontFamily: 'NotoSansJP, monospace',
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: 36 }}>
@@ -155,6 +170,11 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         </div>
       </div>
     ),
-    size,
+    {
+      ...size,
+      fonts: fontData
+        ? [{ name: 'NotoSansJP', data: fontData, weight: 700 as const, style: 'normal' as const }]
+        : [],
+    }
   )
 }
