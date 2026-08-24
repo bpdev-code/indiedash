@@ -8,7 +8,7 @@ import StripeConnect from '../../stripe-connect'
 import type { Project, PaymentProvider } from '@/types'
 
 type EditableProject = Pick<Project,
-  'id' | 'name' | 'status' | 'color' | 'mrr' | 'price' | 'payment_provider' | 'launch_month'
+  'id' | 'name' | 'status' | 'color' | 'mrr' | 'price' | 'payment_provider' | 'launch_month' | 'users_count'
 >
 
 const COLORS = ['#00E5FF', '#7C3AED', '#10B981', '#F59E0B', '#EF4444', '#EC4899']
@@ -101,6 +101,11 @@ export function EditProjectForm({
           <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>月額単価 (円)</label>
           <input name="price" type="number" min="0" defaultValue={project.price ?? ''}
             placeholder="例: 980" className="w-full px-3 py-2 text-sm rounded" />
+        </div>
+        <div className="flex-1">
+          <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>顧客数</label>
+          <input name="users_count" type="number" min="0" defaultValue={project.users_count ?? 0}
+            className="w-full px-3 py-2 text-sm rounded" />
         </div>
       </div>
 

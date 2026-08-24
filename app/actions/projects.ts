@@ -105,6 +105,7 @@ export async function updateProject(id: string, formData: FormData) {
   const launch_month = (formData.get('launch_month') as string) || null
   const price = parseInt(formData.get('price') as string) || null
   const payment_provider = (formData.get('payment_provider') as string) || 'manual'
+  const users_count = parseInt(formData.get('users_count') as string) || 0
 
   const { error } = await supabase
     .from('projects')
@@ -116,6 +117,7 @@ export async function updateProject(id: string, formData: FormData) {
       price,
       payment_provider,
       launch_month,
+      users_count,
     })
     .eq('id', id)
     .eq('user_id', user.id)

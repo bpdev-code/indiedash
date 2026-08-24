@@ -6,7 +6,7 @@ import { RevenueHistoryEditor } from './revenue-history-editor'
 import type { Project } from '@/types'
 
 type EditableProject = Pick<Project,
-  'id' | 'name' | 'status' | 'color' | 'mrr' | 'price' | 'payment_provider' | 'launch_month'
+  'id' | 'name' | 'status' | 'color' | 'mrr' | 'price' | 'payment_provider' | 'launch_month' | 'users_count'
 >
 
 export function EditPageClient({

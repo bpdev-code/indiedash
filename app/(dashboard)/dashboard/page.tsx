@@ -35,10 +35,13 @@ export default async function DashboardPage({
 
   const liveProjects = (projects ?? []).filter(p => p.status === 'live')
   const totalMRR = liveProjects.reduce((s, p) => s + (p.mrr || 0), 0)
+  const totalCustomers = liveProjects.reduce((s, p) => s + (p.users_count || 0), 0)
   const liveIds = liveProjects.map(p => p.id)
 
   let chartData: Record<string, string | number>[] = []
   const chartProjects = liveProjects.map(p => ({ id: p.id, name: p.name, color: p.color }))
+  let growthRate: number | null = null
+  let cumulativeMRR = 0
 
   if (liveIds.length > 0) {
     const { data: allHistory } = await supabase
@@ -55,19 +58,47 @@ export default async function DashboardPage({
     }
 
     const sorted = Object.entries(monthMap).sort(([a], [b]) => a.localeCompare(b))
+
+    // 累計売上: 全月の合計
+    cumulativeMRR = sorted.reduce((s, [, values]) =>
+      s + Object.values(values).reduce((a, b) => a + b, 0), 0)
+
+    // MRR成長率: 直近2ヶ月比較
+    if (sorted.length >= 2) {
+      const prevTotal = Object.values(sorted[sorted.length - 2][1]).reduce((a, b) => a + b, 0)
+      const currTotal = Object.values(sorted[sorted.length - 1][1]).reduce((a, b) => a + b, 0)
+      if (prevTotal > 0) growthRate = ((currTotal - prevTotal) / prevTotal) * 100
+    }
+
     const sliced = sliceCount !== undefined ? sorted.slice(-sliceCount) : sorted
     chartData = sliced.map(([month, values]) => ({ month, ...values }))
   }
 
+  const growthLabel = growthRate === null ? '—'
+    : `${growthRate >= 0 ? '+' : ''}${growthRate.toFixed(1)}%`
+  const growthColor = growthRate === null ? 'var(--text-dim)'
+    : growthRate >= 0 ? '#10B981' : '#EF4444'
+
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6 md:space-y-8">
-      <div>
-        <p className="text-xs tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>
-          MONTHLY RECURRING REVENUE
-        </p>
-        <p className="text-5xl font-bold" style={{ color: 'var(--accent)' }}>
-          ¥{totalMRR.toLocaleString()}
-        </p>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>MRR</p>
+          <p className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>¥{totalMRR.toLocaleString()}</p>
+        </div>
+        <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>前月比</p>
+          <p className="text-2xl font-bold" style={{ color: growthColor }}>{growthLabel}</p>
+        </div>
+        <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>累計売上</p>
+          <p className="text-2xl font-bold">¥{cumulativeMRR.toLocaleString()}</p>
+        </div>
+        <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>顧客数</p>
+          <p className="text-2xl font-bold">{totalCustomers.toLocaleString()}</p>
+        </div>
       </div>
 
       <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
