@@ -8,7 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  Legend,
+  ReferenceLine,
 } from 'recharts'
 
 interface ProjectLine {
@@ -18,8 +18,9 @@ interface ProjectLine {
 }
 
 interface Props {
-  data: Record<string, string | number>[]
+  data: Record<string, string | number | null>[]
   projects: ProjectLine[]
+  currentMonth: string
 }
 
 function formatYAxis(v: number) {
@@ -27,15 +28,7 @@ function formatYAxis(v: number) {
   return `¥${v}`
 }
 
-function StartDot(color: string, firstIndex: number) {
-  return function Dot(props: Record<string, unknown>) {
-    const { cx, cy, index } = props as { cx: number; cy: number; index: number }
-    if (index !== firstIndex) return <g key={`empty-${cx}-${cy}`} />
-    return <circle key={`start-${cx}-${cy}`} cx={cx} cy={cy} r={4} fill={color} strokeWidth={0} />
-  }
-}
-
-export default function MRRChart({ data, projects }: Props) {
+export default function MRRChart({ data, projects, currentMonth }: Props) {
   if (data.length === 0 || projects.length === 0) {
     return (
       <div className="flex items-center justify-center h-32 text-xs" style={{ color: 'var(--text-dim)' }}>
@@ -64,25 +57,45 @@ export default function MRRChart({ data, projects }: Props) {
         <Tooltip
           contentStyle={{ background: '#0d0d0d', border: '1px solid #1a1a1a', fontSize: 11, borderRadius: 4 }}
           labelStyle={{ color: '#888' }}
-          formatter={(value, name) => [`¥${Number(value).toLocaleString()}`, name]}
+          formatter={(value, name) => {
+            const label = String(name).replace(/_proj$/, ' (予測)')
+            return [`¥${Number(value).toLocaleString()}`, label]
+          }}
         />
-        {projects.length > 1 && (
-          <Legend wrapperStyle={{ fontSize: 10, color: '#666', paddingTop: 8 }} />
-        )}
-        {projects.map(p => {
-          const firstIndex = data.findIndex(d => d[p.name] !== undefined && d[p.name] !== null)
-          return (
+        <ReferenceLine
+          x={currentMonth}
+          stroke="#333"
+          strokeDasharray="3 3"
+          label={{ value: '今月', position: 'top', fontSize: 9, fill: '#444' }}
+        />
+        {projects.map(p => (
+          <>
+            {/* 実績ライン (solid) */}
             <Line
-              key={p.id}
+              key={`${p.id}-actual`}
               type="monotone"
               dataKey={p.name}
               stroke={p.color}
               strokeWidth={2}
-              dot={StartDot(p.color, firstIndex)}
+              dot={false}
               activeDot={{ r: 4, fill: p.color }}
+              connectNulls={false}
             />
-          )
-        })}
+            {/* 予測ライン (dashed) */}
+            <Line
+              key={`${p.id}-proj`}
+              type="monotone"
+              dataKey={`${p.name}_proj`}
+              stroke={p.color}
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
+              dot={false}
+              activeDot={{ r: 3, fill: p.color }}
+              connectNulls={false}
+              strokeOpacity={0.5}
+            />
+          </>
+        ))}
       </LineChart>
     </ResponsiveContainer>
   )
