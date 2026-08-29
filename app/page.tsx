@@ -1,63 +1,8 @@
 import Link from 'next/link'
+import { LandingMRRPreview } from './_components/landing-mrr-preview'
 
 const APP_URL = '/signup'
 const PUBLIC_HOST = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/^https?:\/\//, '') || 'indiedash.vercel.app'
-
-// シンプルなSVGグラフ（実績は実線＋グラデーション塗り、未来月は点線で予測を表現）
-function MRRGraph() {
-  const actual = [4200, 6800, 8100, 11200, 15600, 19800, 24500]
-  const projected = 29900 // 直近の伸び率から延長した予測値
-  const data = [...actual, projected]
-  const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月']
-  const lastActualIndex = actual.length - 1
-  const max = Math.max(...data)
-  const w = 400
-  const h = 120
-  const pad = { top: 10, right: 10, bottom: 20, left: 10 }
-  const iw = w - pad.left - pad.right
-  const ih = h - pad.top - pad.bottom
-
-  const points = data.map((v, i) => ({
-    x: pad.left + (i / (data.length - 1)) * iw,
-    y: pad.top + ih - (v / max) * ih,
-  }))
-
-  const actualPoints = points.slice(0, lastActualIndex + 1)
-  const actualPath = actualPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-  const area = `${actualPath} L ${actualPoints[actualPoints.length - 1].x} ${h - pad.bottom} L ${actualPoints[0].x} ${h - pad.bottom} Z`
-  const projectedPath = `M ${points[lastActualIndex].x} ${points[lastActualIndex].y} L ${points[lastActualIndex + 1].x} ${points[lastActualIndex + 1].y}`
-
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: 120 }}>
-      <defs>
-        <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#00E5FF" stopOpacity="0.2" />
-          <stop offset="100%" stopColor="#00E5FF" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {/* グリッド */}
-      {[0.25, 0.5, 0.75].map(r => (
-        <line key={r} x1={pad.left} y1={pad.top + ih * (1 - r)} x2={w - pad.right} y2={pad.top + ih * (1 - r)}
-          stroke="#1a1a1a" strokeWidth="1" />
-      ))}
-      {/* エリア（実績分のみ） */}
-      <path d={area} fill="url(#grad)" />
-      {/* 実績ライン */}
-      <path d={actualPath} fill="none" stroke="#00E5FF" strokeWidth="2" />
-      {/* 予測ライン（点線） */}
-      <path d={projectedPath} fill="none" stroke="#00E5FF" strokeWidth="1.5" strokeDasharray="4 4" strokeOpacity="0.5" />
-      {/* ドット（最初・実績最後・予測） */}
-      <circle cx={points[0].x} cy={points[0].y} r="3" fill="#00E5FF" />
-      <circle cx={points[lastActualIndex].x} cy={points[lastActualIndex].y} r="4" fill="#00E5FF" />
-      <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="3" fill="#00E5FF" fillOpacity="0.5" />
-      {/* X軸ラベル */}
-      {months.map((m, i) => (
-        <text key={m} x={pad.left + (i / (data.length - 1)) * iw} y={h - 4}
-          textAnchor="middle" fontSize="8" fill="#444">{m}</text>
-      ))}
-    </svg>
-  )
-}
 
 export default function LandingPage() {
   return (
@@ -110,7 +55,7 @@ export default function LandingPage() {
           <div className="p-6 text-left" style={{ background: 'var(--bg)' }}>
             <p className="text-xs tracking-widest mb-1" style={{ color: 'var(--text-dim)' }}>MRR</p>
             <p className="text-4xl font-bold mb-4" style={{ color: 'var(--accent)' }}>¥24,500</p>
-            <MRRGraph />
+            <LandingMRRPreview />
             <div className="space-y-2 mt-4">
               {[
                 { name: 'タスク管理アプリ', mrr: 9800, color: '#00E5FF' },
