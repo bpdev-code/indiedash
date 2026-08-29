@@ -190,6 +190,35 @@ export default function LandingPage() {
       <section className="px-6 py-20 border-t" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-2xl mx-auto">
           <p className="text-xs tracking-widest mb-8 text-center" style={{ color: 'var(--text-dim)' }}>PRICING</p>
+
+          {/* FREE / PRO 比較 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-16">
+            <div className="p-6 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <p className="text-xs tracking-widest mb-1" style={{ color: 'var(--text-dim)' }}>FREE</p>
+              <p className="text-2xl font-bold mb-5">¥0</p>
+              <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                <li>✓ プロジェクト3件まで</li>
+                <li>✓ MRR手動入力</li>
+                <li>✓ 公開URL・OGP画像・Xシェア</li>
+                <li>✓ グラフ表示（全期間）</li>
+                <li style={{ color: 'var(--text-dim)' }}>✗ Stripe自動連携</li>
+                <li style={{ color: 'var(--text-dim)' }}>・公開URLに「Powered by INDIEDASH」バッジ表示</li>
+              </ul>
+            </div>
+            <div className="p-6 rounded" style={{ background: '#0a1a0a', border: '1px solid var(--accent)' }}>
+              <p className="text-xs tracking-widest mb-1" style={{ color: 'var(--accent)' }}>PRO</p>
+              <p className="text-2xl font-bold mb-5" style={{ color: 'var(--accent)' }}>
+                ¥300<span className="text-sm font-normal" style={{ color: 'var(--text-muted)' }}>/月</span>
+              </p>
+              <ul className="space-y-2 text-xs" style={{ color: 'var(--text)' }}>
+                <li>✓ プロジェクト無制限</li>
+                <li>✓ Stripe連携で自動更新（無制限）</li>
+                <li>✓ 公開URLのバッジを非表示</li>
+                <li>✓ FREEの全機能を含む</li>
+              </ul>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
