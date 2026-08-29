@@ -74,7 +74,7 @@ export default function SettingsPage() {
             <button onClick={handleUpgrade} disabled={isPendingStripe}
               className="text-xs px-4 py-2 rounded font-bold transition-opacity"
               style={{ background: 'var(--accent)', color: '#000', opacity: isPendingStripe ? 0.6 : 1 }}>
-              {isPendingStripe ? '...' : 'UPGRADE — ¥480/月'}
+              {isPendingStripe ? '...' : 'UPGRADE — ¥300/月'}
             </button>
           )}
         </div>

@@ -203,7 +203,7 @@ export default function LandingPage() {
               <tbody>
                 {[
                   { name: 'Baremetrics', price: '$129/月〜', multi: '△', pub: '✗', ja: '✗', highlight: false },
-                  { name: 'INDIEDASH', price: '¥480/月〜', multi: '◎', pub: '◎', ja: '◎', highlight: true },
+                  { name: 'INDIEDASH', price: '¥300/月〜', multi: '◎', pub: '◎', ja: '◎', highlight: true },
                 ].map(r => (
                   <tr key={r.name} style={{
                     borderBottom: '1px solid var(--border)',
