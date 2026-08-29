@@ -30,6 +30,44 @@ function formatYAxis(v: number) {
   return `¥${v}`
 }
 
+interface TooltipItem {
+  dataKey?: unknown
+  value?: unknown
+  color?: string
+}
+
+// 当月は実績とダミー同値の予測ポイントが重複するので、当月だけ「予測」行を除外する
+function ChartTooltip({ active, payload, label, currentMonth }: {
+  active?: boolean
+  payload?: readonly TooltipItem[]
+  label?: unknown
+  currentMonth: string
+}) {
+  if (!active || !payload || payload.length === 0) return null
+
+  const items = payload.filter(entry => {
+    const key = String(entry.dataKey ?? '')
+    if (key.endsWith('_proj') && label === currentMonth) return false
+    return entry.value != null
+  })
+  if (items.length === 0) return null
+
+  return (
+    <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', fontSize: 11, borderRadius: 4, padding: '6px 10px' }}>
+      <p style={{ color: '#888', margin: '0 0 4px' }}>{String(label ?? '')}</p>
+      {items.map((entry, i) => {
+        const key = String(entry.dataKey ?? '')
+        const displayLabel = key.replace(/_proj$/, ' (予測)')
+        return (
+          <p key={i} style={{ color: entry.color, margin: 0 }}>
+            {displayLabel}: ¥{Number(entry.value).toLocaleString()}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
 // ローンチ月のデータ点だけに● を表示する
 function renderLaunchDot(color: string, launchMonth: string | null) {
   return ({ cx, cy, payload }: { cx?: number; cy?: number; payload?: { month: string } }) => {
@@ -78,14 +116,7 @@ export default function MRRChart({ data, projects, currentMonth }: Props) {
           tickFormatter={formatYAxis}
           width={48}
         />
-        <Tooltip
-          contentStyle={{ background: '#0d0d0d', border: '1px solid #1a1a1a', fontSize: 11, borderRadius: 4 }}
-          labelStyle={{ color: '#888' }}
-          formatter={(value, name) => {
-            const label = String(name).replace(/_proj$/, ' (予測)')
-            return [`¥${Number(value).toLocaleString()}`, label]
-          }}
-        />
+        <Tooltip content={(props) => <ChartTooltip {...props} currentMonth={currentMonth} />} />
         <ReferenceLine
           x={currentMonth}
           stroke="#333"

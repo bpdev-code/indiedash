@@ -156,8 +156,11 @@ export default async function DashboardPage({
         const actualMrr = chartMap[month]?.[p.name] ?? null
         if (!isFuture) {
           entry[p.name] = actualMrr
-          // 当月は実績が確定しているので予測値は出さない（未来の月のみ予測）
-          entry[`${p.name}_proj`] = null
+          // 当月の点は実績とダミーで同値（点線を実績ラインへ視覚的に繋げるためだけの点）。
+          // ツールチップ側で当月の「予測」表示は別途抑制する（mrr-chart.tsx参照）。
+          entry[`${p.name}_proj`] = month === currentMonth
+            ? (actualMrr ?? currentMrrByProject[p.name])
+            : null
         } else {
           entry[p.name] = null
           const base = currentMrrByProject[p.name]
