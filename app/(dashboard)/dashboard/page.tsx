@@ -82,8 +82,8 @@ export default async function DashboardPage({
     ? liveProjects.find(p => p.id === project) ?? null
     : null
   const chartProjects = selectedProject
-    ? [{ id: selectedProject.id, name: selectedProject.name, color: selectedProject.color }]
-    : liveProjects.map(p => ({ id: p.id, name: p.name, color: p.color }))
+    ? [{ id: selectedProject.id, name: selectedProject.name, color: selectedProject.color, launchMonth: selectedProject.launch_month }]
+    : liveProjects.map(p => ({ id: p.id, name: p.name, color: p.color, launchMonth: p.launch_month }))
   const chartIds = chartProjects.map(p => p.id)
 
   let chartData: Record<string, string | number | null>[] = []
@@ -156,10 +156,8 @@ export default async function DashboardPage({
         const actualMrr = chartMap[month]?.[p.name] ?? null
         if (!isFuture) {
           entry[p.name] = actualMrr
-          // Start dashed line at current month
-          entry[`${p.name}_proj`] = month === currentMonth
-            ? (actualMrr ?? currentMrrByProject[p.name])
-            : null
+          // 当月は実績が確定しているので予測値は出さない（未来の月のみ予測）
+          entry[`${p.name}_proj`] = null
         } else {
           entry[p.name] = null
           const base = currentMrrByProject[p.name]

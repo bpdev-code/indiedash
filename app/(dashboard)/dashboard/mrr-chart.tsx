@@ -16,6 +16,7 @@ interface ProjectLine {
   id: string
   name: string
   color: string
+  launchMonth: string | null
 }
 
 interface Props {
@@ -27,6 +28,20 @@ interface Props {
 function formatYAxis(v: number) {
   if (v >= 1000) return `¥${(v / 1000).toFixed(0)}k`
   return `¥${v}`
+}
+
+// ローンチ月のデータ点だけに● を表示する
+function renderLaunchDot(color: string, launchMonth: string | null) {
+  return ({ cx, cy, payload }: { cx?: number; cy?: number; payload?: { month: string } }) => {
+    const isLaunch = launchMonth && payload?.month === launchMonth
+    if (!isLaunch || cx == null || cy == null) {
+      return <circle key={`dot-${payload?.month}`} cx={cx ?? 0} cy={cy ?? 0} r={0} fill="none" />
+    }
+    return (
+      <circle key={`launch-${payload.month}`} cx={cx} cy={cy} r={4}
+        fill={color} stroke="#000" strokeWidth={1.5} />
+    )
+  }
 }
 
 export default function MRRChart({ data, projects, currentMonth }: Props) {
@@ -87,7 +102,7 @@ export default function MRRChart({ data, projects, currentMonth }: Props) {
               stroke={p.color}
               strokeWidth={2}
               fill={`url(#mrr-grad-${i})`}
-              dot={false}
+              dot={renderLaunchDot(p.color, p.launchMonth)}
               activeDot={{ r: 4, fill: p.color }}
               connectNulls={false}
             />
