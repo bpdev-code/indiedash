@@ -8,7 +8,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser()
 
   const [{ data: profile }, { data: settings }] = await Promise.all([
-    supabase.from('profiles').select('plan, slug, email').eq('id', user!.id).single(),
+    supabase.from('profiles').select('plan, slug, email, is_admin').eq('id', user!.id).single(),
     supabase.from('public_settings').select('is_public').eq('user_id', user!.id).maybeSingle(),
   ])
 
@@ -35,6 +35,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
             style={{ color: 'var(--text-muted)' }}>
             SETTINGS
           </Link>
+          <Link href="/feedback" className="px-3 py-2 rounded hover:bg-[#111] transition-colors"
+            style={{ color: 'var(--text-muted)' }}>
+            FEEDBACK
+          </Link>
+          {profile?.is_admin && (
+            <Link href="/admin" className="px-3 py-2 rounded hover:bg-[#111] transition-colors"
+              style={{ color: 'var(--accent)' }}>
+              ADMIN
+            </Link>
+          )}
         </nav>
 
         <div className="space-y-3">
@@ -89,6 +99,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           { href: '/dashboard', label: 'HOME', icon: '⬡' },
           { href: '/projects', label: 'PROJECTS', icon: '◈' },
           { href: '/settings', label: 'SETTINGS', icon: '◎' },
+          { href: '/feedback', label: 'FEEDBACK', icon: '✎' },
         ].map(item => (
           <Link key={item.href} href={item.href}
             className="flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors"

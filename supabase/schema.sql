@@ -102,3 +102,30 @@ $$ language plpgsql security definer;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure handle_new_user();
+
+-- ============================================================
+-- Admin + Feedback (2026-08-29)
+-- ============================================================
+
+alter table profiles add column if not exists is_admin boolean default false;
+
+create table if not exists feedback (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id) on delete cascade not null,
+  message text not null,
+  created_at timestamptz default now()
+);
+
+alter table feedback enable row level security;
+
+create policy "Users insert own feedback" on feedback
+  for insert with check (auth.uid() = user_id);
+create policy "Users read own feedback" on feedback
+  for select using (auth.uid() = user_id);
+create policy "Admins read all feedback" on feedback
+  for select using (
+    exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
+
+-- 自分のアカウントを管理者にする（メールアドレスは必要に応じて変更してください）
+update profiles set is_admin = true where email = 'bpdev.nft@gmail.com';

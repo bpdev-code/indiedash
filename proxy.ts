@@ -33,7 +33,9 @@ export async function proxy(request: NextRequest) {
   const isProtected =
     path.startsWith('/dashboard') ||
     path.startsWith('/projects') ||
-    path.startsWith('/settings')
+    path.startsWith('/settings') ||
+    path.startsWith('/feedback') ||
+    path.startsWith('/admin')
   const isAuthPage = path === '/login' || path === '/signup'
 
   if (isProtected && !user) {

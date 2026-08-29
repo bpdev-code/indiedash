@@ -8,6 +8,14 @@ export interface Profile {
   slug: string | null
   plan: Plan
   stripe_customer_id: string | null
+  is_admin: boolean
+  created_at: string
+}
+
+export interface Feedback {
+  id: string
+  user_id: string
+  message: string
   created_at: string
 }
 

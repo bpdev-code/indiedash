@@ -22,6 +22,27 @@ function offsetMonth(base: string, offset: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
+function monthsDiff(from: string, to: string): number {
+  const [fy, fm] = from.split('-').map(Number)
+  const [ty, tm] = to.split('-').map(Number)
+  return (ty - fy) * 12 + (tm - fm)
+}
+
+// 実績データの直近の月次成長率（平均）を算出。極端な値は±20%/月にクランプする。
+function trailingGrowthRate(series: Record<string, number>): number {
+  const months = Object.keys(series).sort()
+  const rates: number[] = []
+  for (let i = 1; i < months.length; i++) {
+    const prev = series[months[i - 1]]
+    const curr = series[months[i]]
+    if (prev > 0) rates.push((curr - prev) / prev)
+  }
+  const recent = rates.slice(-3)
+  if (recent.length === 0) return 0
+  const avg = recent.reduce((a, b) => a + b, 0) / recent.length
+  return Math.max(-0.2, Math.min(0.2, avg))
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -93,11 +114,19 @@ export default async function DashboardPage({
       if (p) chartMap[h.month][p.name] = h.mrr
     }
 
-    // Current MRR per project (for flat projection)
+    // Current MRR per project — 当月の実績が無ければプロジェクトの現在のMRRにフォールバック
+    // （Stripe未同期などで revenue_history に当月分がまだ無いケース）
     const currentMrrByProject: Record<string, number> = {}
+    const growthRateByProject: Record<string, number> = {}
     for (const p of chartProjects) {
-      currentMrrByProject[p.name] = chartMap[currentMonth]?.[p.name]
-        ?? p.id === selectedProject?.id ? (selectedProject?.mrr ?? 0) : 0
+      const project = liveProjects.find(lp => lp.id === p.id)
+      currentMrrByProject[p.name] = chartMap[currentMonth]?.[p.name] ?? project?.mrr ?? 0
+
+      const actualSeries: Record<string, number> = {}
+      for (const [month, vals] of Object.entries(chartMap)) {
+        if (month <= currentMonth && vals[p.name] != null) actualSeries[month] = vals[p.name]
+      }
+      growthRateByProject[p.name] = trailingGrowthRate(actualSeries)
     }
 
     // Build month list: centered on current month (or all history if period=all)
@@ -125,7 +154,12 @@ export default async function DashboardPage({
             : null
         } else {
           entry[p.name] = null
-          entry[`${p.name}_proj`] = currentMrrByProject[p.name] ?? null
+          const base = currentMrrByProject[p.name]
+          const monthsAhead = monthsDiff(currentMonth, month)
+          const rate = growthRateByProject[p.name] ?? 0
+          entry[`${p.name}_proj`] = base != null
+            ? Math.max(0, Math.round(base * Math.pow(1 + rate, monthsAhead)))
+            : null
         }
       }
       return entry
