@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
+const PUBLIC_HOST = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/^https?:\/\//, '') || 'indiedash.vercel.app'
+
 async function loadFont(): Promise<ArrayBuffer | null> {
   try {
     const css = await fetch(
@@ -163,7 +165,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           borderTop: '1px solid #1a1a1a', paddingTop: 18,
         }}>
           <span style={{ fontSize: 12, color: '#555' }}>
-            Powered by INDIEDASH — indiedash.app
+            Powered by INDIEDASH — {PUBLIC_HOST}
           </span>
           <span style={{ fontSize: 12, color: '#333' }}>
             {new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })}

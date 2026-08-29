@@ -1,7 +1,8 @@
 'use client'
 
 import {
-  LineChart,
+  ComposedChart,
+  Area,
   Line,
   XAxis,
   YAxis,
@@ -39,7 +40,15 @@ export default function MRRChart({ data, projects, currentMonth }: Props) {
 
   return (
     <ResponsiveContainer width="100%" height={180}>
-      <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+      <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <defs>
+          {projects.map((p, i) => (
+            <linearGradient key={p.id} id={`mrr-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={p.color} stopOpacity={0.25} />
+              <stop offset="100%" stopColor={p.color} stopOpacity={0} />
+            </linearGradient>
+          ))}
+        </defs>
         <CartesianGrid stroke="#1a1a1a" vertical={false} />
         <XAxis
           dataKey="month"
@@ -68,15 +77,16 @@ export default function MRRChart({ data, projects, currentMonth }: Props) {
           strokeDasharray="3 3"
           label={{ value: '今月', position: 'top', fontSize: 9, fill: '#444' }}
         />
-        {projects.map(p => (
+        {projects.map((p, i) => (
           <>
-            {/* 実績ライン (solid) */}
-            <Line
+            {/* 実績エリア (フェードするグラデーション塗り) */}
+            <Area
               key={`${p.id}-actual`}
               type="monotone"
               dataKey={p.name}
               stroke={p.color}
               strokeWidth={2}
+              fill={`url(#mrr-grad-${i})`}
               dot={false}
               activeDot={{ r: 4, fill: p.color }}
               connectNulls={false}
@@ -96,7 +106,7 @@ export default function MRRChart({ data, projects, currentMonth }: Props) {
             />
           </>
         ))}
-      </LineChart>
+      </ComposedChart>
     </ResponsiveContainer>
   )
 }

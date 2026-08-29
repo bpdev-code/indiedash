@@ -1,11 +1,15 @@
 import Link from 'next/link'
 
 const APP_URL = '/signup'
+const PUBLIC_HOST = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/^https?:\/\//, '') || 'indiedash.vercel.app'
 
-// シンプルなSVGグラフ
+// シンプルなSVGグラフ（実績は実線＋グラデーション塗り、未来月は点線で予測を表現）
 function MRRGraph() {
-  const data = [4200, 6800, 8100, 11200, 15600, 19800, 24500]
-  const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月']
+  const actual = [4200, 6800, 8100, 11200, 15600, 19800, 24500]
+  const projected = 29900 // 直近の伸び率から延長した予測値
+  const data = [...actual, projected]
+  const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月']
+  const lastActualIndex = actual.length - 1
   const max = Math.max(...data)
   const w = 400
   const h = 120
@@ -18,8 +22,10 @@ function MRRGraph() {
     y: pad.top + ih - (v / max) * ih,
   }))
 
-  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-  const area = `${path} L ${points[points.length - 1].x} ${h - pad.bottom} L ${points[0].x} ${h - pad.bottom} Z`
+  const actualPoints = points.slice(0, lastActualIndex + 1)
+  const actualPath = actualPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+  const area = `${actualPath} L ${actualPoints[actualPoints.length - 1].x} ${h - pad.bottom} L ${actualPoints[0].x} ${h - pad.bottom} Z`
+  const projectedPath = `M ${points[lastActualIndex].x} ${points[lastActualIndex].y} L ${points[lastActualIndex + 1].x} ${points[lastActualIndex + 1].y}`
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: 120 }}>
@@ -34,13 +40,16 @@ function MRRGraph() {
         <line key={r} x1={pad.left} y1={pad.top + ih * (1 - r)} x2={w - pad.right} y2={pad.top + ih * (1 - r)}
           stroke="#1a1a1a" strokeWidth="1" />
       ))}
-      {/* エリア */}
+      {/* エリア（実績分のみ） */}
       <path d={area} fill="url(#grad)" />
-      {/* ライン */}
-      <path d={path} fill="none" stroke="#00E5FF" strokeWidth="2" />
-      {/* ドット（最初と最後） */}
+      {/* 実績ライン */}
+      <path d={actualPath} fill="none" stroke="#00E5FF" strokeWidth="2" />
+      {/* 予測ライン（点線） */}
+      <path d={projectedPath} fill="none" stroke="#00E5FF" strokeWidth="1.5" strokeDasharray="4 4" strokeOpacity="0.5" />
+      {/* ドット（最初・実績最後・予測） */}
       <circle cx={points[0].x} cy={points[0].y} r="3" fill="#00E5FF" />
-      <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="4" fill="#00E5FF" />
+      <circle cx={points[lastActualIndex].x} cy={points[lastActualIndex].y} r="4" fill="#00E5FF" />
+      <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="3" fill="#00E5FF" fillOpacity="0.5" />
       {/* X軸ラベル */}
       {months.map((m, i) => (
         <text key={m} x={pad.left + (i / (data.length - 1)) * iw} y={h - 4}
@@ -95,7 +104,7 @@ export default function LandingPage() {
             <div className="w-3 h-3 rounded-full" style={{ background: '#333' }} />
             <div className="w-3 h-3 rounded-full" style={{ background: '#333' }} />
             <span className="text-xs ml-2" style={{ color: 'var(--text-dim)' }}>
-              indiedash.app/public/takumi
+              {PUBLIC_HOST}/public/takumi
             </span>
           </div>
           <div className="p-6 text-left" style={{ background: 'var(--bg)' }}>
@@ -173,7 +182,7 @@ export default function LandingPage() {
             {[
               { title: '複数アプリを一元管理', desc: '全プロダクトのMRRをひとつのダッシュボードに集約。プロジェクトごとにグラフで推移を確認。' },
               { title: 'Stripe連携で自動更新', desc: '制限付きAPIキーを登録するだけ。サブスクMRRが自動で取得・記録される。' },
-              { title: '公開URLで即シェア', desc: 'indiedash.app/public/yourname を作成。URLを貼るだけでXに共有できる。' },
+              { title: '公開URLで即シェア', desc: `${PUBLIC_HOST}/public/yourname を作成。URLを貼るだけでXに共有できる。` },
               { title: 'OGP画像を自動生成', desc: 'XにURLを貼るとMRRカードが自動展開。毎月の収益報告が10秒で終わる。' },
             ].map(f => (
               <div key={f.title} className="p-5 rounded"
