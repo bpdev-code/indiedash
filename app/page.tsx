@@ -253,7 +253,7 @@ export default function LandingPage() {
       <section className="px-6 py-24 border-t text-center" style={{ borderColor: 'var(--border)' }}>
         <h2 className="text-2xl font-bold mb-4">今すぐ収益を公開しよう</h2>
         <p className="text-sm mb-8" style={{ color: 'var(--text-muted)' }}>
-          無料プランで今すぐ使える。Stripe連携・公開URL対応。
+          無料プランで今すぐ使える。公開URLでシェアも思いのまま（Stripe自動連携はPROプランで）。
         </p>
         <Link href={APP_URL} className="inline-block px-10 py-3 rounded font-bold text-sm"
           style={{ background: 'var(--accent)', color: '#000' }}>
