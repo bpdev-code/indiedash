@@ -28,19 +28,22 @@ function monthsDiff(from: string, to: string): number {
   return (ty - fy) * 12 + (tm - fm)
 }
 
-// 実績データの直近の月次成長率（平均）を算出。極端な値は±20%/月にクランプする。
+// CMGR (Compound Monthly Growth Rate) — 直近の実績ウィンドウの始点・終点から
+// 複利ベースの月次成長率を算出する。単純な月次成長率の算術平均は、MRRのような
+// 複利で積み上がる値の予測には数学的に整合しないため使わない。
+// 参考: CMGR = (終値 / 始値)^(1 / 経過月数) − 1
 function trailingGrowthRate(series: Record<string, number>): number {
   const months = Object.keys(series).sort()
-  const rates: number[] = []
-  for (let i = 1; i < months.length; i++) {
-    const prev = series[months[i - 1]]
-    const curr = series[months[i]]
-    if (prev > 0) rates.push((curr - prev) / prev)
-  }
-  const recent = rates.slice(-3)
-  if (recent.length === 0) return 0
-  const avg = recent.reduce((a, b) => a + b, 0) / recent.length
-  return Math.max(-0.2, Math.min(0.2, avg))
+  const window = months.slice(-4) // 直近最大4データ点（=3ヶ月分の成長）
+  if (window.length < 2) return 0
+
+  const start = series[window[0]]
+  const end = series[window[window.length - 1]]
+  const periods = window.length - 1
+  if (start <= 0) return 0
+
+  const cmgr = Math.pow(end / start, 1 / periods) - 1
+  return Math.max(-0.2, Math.min(0.2, cmgr))
 }
 
 export default async function DashboardPage({
