@@ -25,7 +25,7 @@ export default async function PublicDashboardPage({ params }: Props) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, slug, plan')
+    .select('id, slug')
     .eq('slug', slug)
     .single()
 
@@ -46,7 +46,6 @@ export default async function PublicDashboardPage({ params }: Props) {
     .eq('status', 'live')
 
   const totalMRR = (projects ?? []).reduce((s, p) => s + (p.mrr || 0), 0)
-  const isFree = profile.plan === 'free'
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
@@ -87,11 +86,9 @@ export default async function PublicDashboardPage({ params }: Props) {
         <div className="pt-4 border-t text-xs flex items-center justify-between"
           style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}>
           <span>{new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })}</span>
-          {isFree && (
-            <a href="/" className="hover:underline" style={{ color: 'var(--accent)' }}>
-              Powered by INDIEDASH
-            </a>
-          )}
+          <a href="/" className="hover:underline" style={{ color: 'var(--accent)' }}>
+            Powered by INDIEDASH
+          </a>
         </div>
       </main>
     </div>

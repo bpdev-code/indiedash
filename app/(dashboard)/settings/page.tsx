@@ -81,8 +81,7 @@ export default function SettingsPage() {
         {profile.plan === 'free' && (
           <ul className="text-xs space-y-1" style={{ color: 'var(--text-dim)' }}>
             <li>• プロジェクト3件まで</li>
-            <li>• Stripe連携1件まで</li>
-            <li>• 公開URL（Powered by INDIEDASH バッジ付き）</li>
+            <li>• Stripe連携はPROプランのみ</li>
           </ul>
         )}
       </section>

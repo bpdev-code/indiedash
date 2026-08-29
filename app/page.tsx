@@ -202,7 +202,6 @@ export default function LandingPage() {
                 <li>✓ 公開URL・OGP画像・Xシェア</li>
                 <li>✓ グラフ表示（全期間）</li>
                 <li style={{ color: 'var(--text-dim)' }}>✗ Stripe自動連携</li>
-                <li style={{ color: 'var(--text-dim)' }}>・公開URLに「Powered by INDIEDASH」バッジ表示</li>
               </ul>
             </div>
             <div className="p-6 rounded" style={{ background: '#0a1a0a', border: '1px solid var(--accent)' }}>
@@ -213,7 +212,6 @@ export default function LandingPage() {
               <ul className="space-y-2 text-xs" style={{ color: 'var(--text)' }}>
                 <li>✓ プロジェクト無制限</li>
                 <li>✓ Stripe連携で自動更新（無制限）</li>
-                <li>✓ 公開URLのバッジを非表示</li>
                 <li>✓ FREEの全機能を含む</li>
               </ul>
             </div>

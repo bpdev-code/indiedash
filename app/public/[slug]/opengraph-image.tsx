@@ -34,7 +34,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, plan')
+    .select('id')
     .eq('slug', slug)
     .single()
 
@@ -55,7 +55,6 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     .eq('status', 'live')
 
   const totalMRR = (projects ?? []).reduce((s: number, p: { mrr?: number }) => s + (p.mrr || 0), 0)
-  const isFree = profile.plan === 'free'
 
   // Fetch last 6 months of history for the chart
   const last6 = getLast6Months()
@@ -163,8 +162,8 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           display: 'flex', justifyContent: 'space-between',
           borderTop: '1px solid #1a1a1a', paddingTop: 18,
         }}>
-          <span style={{ fontSize: 12, color: isFree ? '#555' : '#333' }}>
-            {isFree ? 'Powered by INDIEDASH — indiedash.app' : 'indiedash.app'}
+          <span style={{ fontSize: 12, color: '#555' }}>
+            Powered by INDIEDASH — indiedash.app
           </span>
           <span style={{ fontSize: 12, color: '#333' }}>
             {new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })}
