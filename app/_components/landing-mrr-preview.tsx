@@ -30,8 +30,8 @@ function xAt(i: number) {
 }
 
 function formatAmount(v: number) {
-  if (v >= 1000) return `¥${(v / 1000).toFixed(0)}k`
-  return `¥${Math.round(v)}`
+  if (v >= 1000) return `${(v / 1000).toFixed(0)}k`
+  return `${Math.round(v)}`
 }
 
 export function LandingMRRPreview() {
