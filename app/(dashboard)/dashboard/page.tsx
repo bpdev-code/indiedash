@@ -82,8 +82,8 @@ export default async function DashboardPage({
     ? liveProjects.find(p => p.id === project) ?? null
     : null
   const chartProjects = selectedProject
-    ? [{ id: selectedProject.id, name: selectedProject.name, color: selectedProject.color, launchMonth: selectedProject.launch_month }]
-    : liveProjects.map(p => ({ id: p.id, name: p.name, color: p.color, launchMonth: p.launch_month }))
+    ? [{ id: selectedProject.id, name: selectedProject.name, color: selectedProject.color, launchMonth: selectedProject.launch_month, launchMrr: null as number | null }]
+    : liveProjects.map(p => ({ id: p.id, name: p.name, color: p.color, launchMonth: p.launch_month, launchMrr: null as number | null }))
   const chartIds = chartProjects.map(p => p.id)
 
   let chartData: Record<string, string | number | null>[] = []
@@ -122,13 +122,22 @@ export default async function DashboardPage({
       if (p) chartMap[h.month][p.name] = h.mrr
     }
 
+    // ローンチ月のMRR（その月のデータが実際に存在する場合のみ、グラフ上に●を打つため）
+    for (const p of chartProjects) {
+      p.launchMrr = p.launchMonth ? chartMap[p.launchMonth]?.[p.name] ?? null : null
+    }
+
     // Current MRR per project — 当月の実績が無ければプロジェクトの現在のMRRにフォールバック
     // （Stripe未同期などで revenue_history に当月分がまだ無いケース）
     const currentMrrByProject: Record<string, number> = {}
     const growthRateByProject: Record<string, number> = {}
+    // 当月まで実績が継続入力されているプロジェクトだけ予測を出す（test3のように更新が
+    // 止まっているプロジェクトの予測は、古いデータに基づく信頼できない値になるため出さない）
+    const hasUpToDateActual: Record<string, boolean> = {}
     for (const p of chartProjects) {
       const project = liveProjects.find(lp => lp.id === p.id)
       currentMrrByProject[p.name] = chartMap[currentMonth]?.[p.name] ?? project?.mrr ?? 0
+      hasUpToDateActual[p.name] = chartMap[currentMonth]?.[p.name] != null
 
       const actualSeries: Record<string, number> = {}
       for (const [month, vals] of Object.entries(chartMap)) {
@@ -166,7 +175,7 @@ export default async function DashboardPage({
           const base = currentMrrByProject[p.name]
           const monthsAhead = monthsDiff(currentMonth, month)
           const rate = growthRateByProject[p.name] ?? 0
-          entry[`${p.name}_proj`] = base != null
+          entry[`${p.name}_proj`] = hasUpToDateActual[p.name] && base != null
             ? Math.max(0, Math.round(base * Math.pow(1 + rate, monthsAhead)))
             : null
         }

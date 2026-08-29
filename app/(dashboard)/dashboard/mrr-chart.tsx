@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   ReferenceLine,
+  ReferenceDot,
 } from 'recharts'
 
 interface ProjectLine {
@@ -17,6 +18,7 @@ interface ProjectLine {
   name: string
   color: string
   launchMonth: string | null
+  launchMrr: number | null
 }
 
 interface Props {
@@ -66,20 +68,6 @@ function ChartTooltip({ active, payload, label, currentMonth }: {
       })}
     </div>
   )
-}
-
-// ローンチ月のデータ点だけに● を表示する
-function renderLaunchDot(color: string, launchMonth: string | null) {
-  return ({ cx, cy, payload }: { cx?: number; cy?: number; payload?: { month: string } }) => {
-    const isLaunch = launchMonth && payload?.month === launchMonth
-    if (!isLaunch || cx == null || cy == null) {
-      return <circle key={`dot-${payload?.month}`} cx={cx ?? 0} cy={cy ?? 0} r={0} fill="none" />
-    }
-    return (
-      <circle key={`launch-${payload.month}`} cx={cx} cy={cy} r={4}
-        fill={color} stroke="#000" strokeWidth={1.5} />
-    )
-  }
 }
 
 export default function MRRChart({ data, projects, currentMonth }: Props) {
@@ -133,7 +121,7 @@ export default function MRRChart({ data, projects, currentMonth }: Props) {
               stroke={p.color}
               strokeWidth={2}
               fill={`url(#mrr-grad-${i})`}
-              dot={renderLaunchDot(p.color, p.launchMonth)}
+              dot={false}
               activeDot={{ r: 4, fill: p.color }}
               connectNulls={false}
             />
@@ -150,6 +138,18 @@ export default function MRRChart({ data, projects, currentMonth }: Props) {
               connectNulls={false}
               strokeOpacity={0.5}
             />
+            {/* ローンチ月マーカー */}
+            {p.launchMonth && p.launchMrr != null && (
+              <ReferenceDot
+                key={`${p.id}-launch`}
+                x={p.launchMonth}
+                y={p.launchMrr}
+                r={4}
+                fill={p.color}
+                stroke="#000"
+                strokeWidth={1.5}
+              />
+            )}
           </>
         ))}
       </ComposedChart>

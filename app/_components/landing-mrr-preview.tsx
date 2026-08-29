@@ -12,20 +12,26 @@ interface ProjectSeries {
 
 const MONTHS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月']
 
+// あえて違う伸び方にする: Aは徐々に加速する成長、Bは立ち上がり後に鈍化する成長
 const PROJECTS: ProjectSeries[] = [
-  { key: 'a', name: 'タスク管理アプリ', color: '#00E5FF', actual: [1680, 2720, 3240, 4480, 6240, 7920, 9800], projected: 11960 },
-  { key: 'b', name: '請求書作成ツール', color: '#7C3AED', actual: [2520, 4080, 4860, 6720, 9360, 11880, 14700], projected: 17940 },
+  { key: 'a', name: 'タスク管理アプリ', color: '#00E5FF', actual: [800, 1800, 3000, 4400, 6000, 7800, 9800], projected: 12000 },
+  { key: 'b', name: '請求書作成ツール', color: '#7C3AED', actual: [3200, 6800, 9800, 11800, 13000, 13900, 14700], projected: 15400 },
 ]
 
 const W = 400
 const H = 120
-const PAD = { top: 10, right: 10, bottom: 20, left: 10 }
+const PAD = { top: 10, right: 10, bottom: 20, left: 30 }
 const IW = W - PAD.left - PAD.right
 const IH = H - PAD.top - PAD.bottom
 const N = 8
 
 function xAt(i: number) {
   return PAD.left + (i / (N - 1)) * IW
+}
+
+function formatAmount(v: number) {
+  if (v >= 1000) return `¥${(v / 1000).toFixed(0)}k`
+  return `¥${Math.round(v)}`
 }
 
 export function LandingMRRPreview() {
@@ -77,10 +83,15 @@ export function LandingMRRPreview() {
           ))}
         </defs>
 
-        {/* グリッド */}
+        {/* グリッド + 縦軸ラベル */}
         {[0.25, 0.5, 0.75].map(r => (
-          <line key={r} x1={PAD.left} y1={PAD.top + IH * (1 - r)} x2={W - PAD.right} y2={PAD.top + IH * (1 - r)}
-            stroke="#1a1a1a" strokeWidth="1" />
+          <g key={r}>
+            <line x1={PAD.left} y1={PAD.top + IH * (1 - r)} x2={W - PAD.right} y2={PAD.top + IH * (1 - r)}
+              stroke="#1a1a1a" strokeWidth="1" />
+            <text x={PAD.left - 4} y={PAD.top + IH * (1 - r) + 3} textAnchor="end" fontSize="8" fill="#444">
+              {formatAmount(max * r)}
+            </text>
+          </g>
         ))}
 
         {visible.map(p => {
