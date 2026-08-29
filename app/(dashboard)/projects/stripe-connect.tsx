@@ -133,9 +133,13 @@ export default function StripeConnect({ projectId }: Props) {
       <div className="flex gap-2">
         <input
           type="password"
+          name="stripe_secret_key"
           value={key}
           onChange={e => setKey(e.target.value)}
           placeholder="rk_live_... または rk_test_..."
+          autoComplete="new-password"
+          data-1p-ignore
+          data-lpignore="true"
           className="flex-1 px-3 py-2 text-xs rounded"
         />
         <button type="button" onClick={handleConnect} disabled={isPending || !key}
