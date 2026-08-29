@@ -104,7 +104,7 @@ export default function LandingPage() {
             <div className="w-3 h-3 rounded-full" style={{ background: '#333' }} />
             <div className="w-3 h-3 rounded-full" style={{ background: '#333' }} />
             <span className="text-xs ml-2" style={{ color: 'var(--text-dim)' }}>
-              {PUBLIC_HOST}/public/takumi
+              {PUBLIC_HOST}/public/yourname
             </span>
           </div>
           <div className="p-6 text-left" style={{ background: 'var(--bg)' }}>
