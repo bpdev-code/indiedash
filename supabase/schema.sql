@@ -127,5 +127,22 @@ create policy "Admins read all feedback" on feedback
     exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin = true)
   );
 
+-- ============================================================
+-- Login attempt throttling (2026-08-29)
+-- ============================================================
+-- サーバー側（service role経由）のみが読み書きする。RLSは有効だが
+-- ポリシーを一切定義しないことで、anon/authenticatedからのアクセスを遮断する。
+
+create table if not exists login_attempts (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  success boolean not null,
+  attempted_at timestamptz default now()
+);
+
+create index if not exists login_attempts_email_time_idx on login_attempts (email, attempted_at);
+
+alter table login_attempts enable row level security;
+
 -- 自分のアカウントを管理者にする（メールアドレスは必要に応じて変更してください）
 update profiles set is_admin = true where email = 'bpdev.nft@gmail.com';

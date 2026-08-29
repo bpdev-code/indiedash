@@ -1,8 +1,12 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+
+const MAX_LOGIN_ATTEMPTS = 5
+const LOGIN_WINDOW_MINUTES = 15
 
 export async function signUp(formData: FormData) {
   const supabase = await createClient()
@@ -34,7 +38,23 @@ export async function signIn(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
+  const admin = createAdminClient()
+  const windowStart = new Date(Date.now() - LOGIN_WINDOW_MINUTES * 60 * 1000).toISOString()
+
+  const { count } = await admin
+    .from('login_attempts')
+    .select('id', { count: 'exact', head: true })
+    .eq('email', email)
+    .eq('success', false)
+    .gte('attempted_at', windowStart)
+
+  if ((count ?? 0) >= MAX_LOGIN_ATTEMPTS) {
+    return { error: `ログイン試行回数が上限を超えました。${LOGIN_WINDOW_MINUTES}分後に再度お試しください。` }
+  }
+
   const { error } = await supabase.auth.signInWithPassword({ email, password })
+  await admin.from('login_attempts').insert({ email, success: !error })
+
   if (error) return { error: error.message }
 
   redirect('/dashboard')
