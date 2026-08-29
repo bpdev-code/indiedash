@@ -32,18 +32,23 @@ function monthsDiff(from: string, to: string): number {
 // 複利ベースの月次成長率を算出する。単純な月次成長率の算術平均は、MRRのような
 // 複利で積み上がる値の予測には数学的に整合しないため使わない。
 // 参考: CMGR = (終値 / 始値)^(1 / 経過月数) − 1
+//
+// CMGRは始点・終点の2つの値だけで決まる（途中の月は打ち消し合って結果に影響しない）ため、
+// ウィンドウが短いと直近1回の変動（顧客数が少ないと1人の解約でも%が大きく振れる）だけで
+// 将来予測全体が引っ張られてしまう。直近6ヶ月分に広げてその影響を薄め、変化点が
+// 2回未満（＝ノイズが支配的）の場合は横ばい（0%）にフォールバックする。
 function trailingGrowthRate(series: Record<string, number>): number {
   const months = Object.keys(series).sort()
-  const window = months.slice(-4) // 直近最大4データ点（=3ヶ月分の成長）
-  if (window.length < 2) return 0
+  const window = months.slice(-7) // 直近最大7データ点（=6ヶ月分の成長）
+  const periods = window.length - 1
+  if (periods < 2) return 0
 
   const start = series[window[0]]
   const end = series[window[window.length - 1]]
-  const periods = window.length - 1
   if (start <= 0) return 0
 
   const cmgr = Math.pow(end / start, 1 / periods) - 1
-  return Math.max(-0.2, Math.min(0.2, cmgr))
+  return Math.max(-0.15, Math.min(0.15, cmgr))
 }
 
 export default async function DashboardPage({
