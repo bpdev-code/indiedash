@@ -28,6 +28,22 @@ function monthsDiff(from: string, to: string): number {
   return (ty - fy) * 12 + (tm - fm)
 }
 
+// revenue_historyに記録が無い月でも、ローンチ月〜当月の範囲内なら0円として扱う
+// （Stripe連携で「サブスクがまだ無かった月」はそもそもレコードが作られないため、
+// 実績ラインに穴が空いてしまうのを防ぐ）
+function actualOrZero(
+  chartMap: Record<string, Record<string, number>>,
+  month: string,
+  name: string,
+  launchMonth: string | null,
+  currentMonth: string
+): number | null {
+  const recorded = chartMap[month]?.[name]
+  if (recorded != null) return recorded
+  if (launchMonth && month >= launchMonth && month <= currentMonth) return 0
+  return null
+}
+
 // CMGR (Compound Monthly Growth Rate) — 直近の実績ウィンドウの始点・終点から
 // 複利ベースの月次成長率を算出する。単純な月次成長率の算術平均は、MRRのような
 // 複利で積み上がる値の予測には数学的に整合しないため使わない。
@@ -122,9 +138,9 @@ export default async function DashboardPage({
       if (p) chartMap[h.month][p.name] = h.mrr
     }
 
-    // ローンチ月のMRR（その月のデータが実際に存在する場合のみ、グラフ上に●を打つため）
+    // ローンチ月のMRR（グラフ上に●を打つため。データが無ければ0円扱い）
     for (const p of chartProjects) {
-      p.launchMrr = p.launchMonth ? chartMap[p.launchMonth]?.[p.name] ?? null : null
+      p.launchMrr = p.launchMonth ? actualOrZero(chartMap, p.launchMonth, p.name, p.launchMonth, currentMonth) : null
     }
 
     // Current MRR per project — 当月の実績が無ければプロジェクトの現在のMRRにフォールバック
@@ -149,9 +165,12 @@ export default async function DashboardPage({
     // Build month list: centered on current month (or all history if period=all)
     let months: string[]
     if (period === 'all') {
-      const histMonths = Object.keys(chartMap).sort()
-      if (!histMonths.includes(currentMonth)) histMonths.push(currentMonth)
-      months = histMonths
+      const histMonths = new Set(Object.keys(chartMap))
+      histMonths.add(currentMonth)
+      for (const p of chartProjects) {
+        if (p.launchMonth) histMonths.add(p.launchMonth)
+      }
+      months = Array.from(histMonths).sort()
     } else {
       const n = PERIOD_MONTHS[period] ?? 6
       const pastCount = Math.floor(n / 2)
@@ -162,7 +181,7 @@ export default async function DashboardPage({
       const isFuture = month > currentMonth
       const entry: Record<string, string | number | null> = { month }
       for (const p of chartProjects) {
-        const actualMrr = chartMap[month]?.[p.name] ?? null
+        const actualMrr = actualOrZero(chartMap, month, p.name, p.launchMonth, currentMonth)
         if (!isFuture) {
           entry[p.name] = actualMrr
           // 当月の点は実績とダミーで同値（点線を実績ラインへ視覚的に繋げるためだけの点）。
