@@ -3,11 +3,13 @@
 import { useState, useEffect, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { updateSlug, updatePublicSettings, createStripeCheckout } from '@/app/actions/settings'
+import { buildShareTweetText } from '@/lib/share-text'
 import type { Profile, PublicSettings } from '@/types'
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [settings, setSettings] = useState<PublicSettings | null>(null)
+  const [totalMRR, setTotalMRR] = useState(0)
   const [slugMsg, setSlugMsg] = useState<string | null>(null)
   const [isPendingSlug, startSlug] = useTransition()
   const [isPendingPublic, startPublic] = useTransition()
@@ -19,6 +21,9 @@ export default function SettingsPage() {
       if (!user) return
       supabase.from('profiles').select('*').eq('id', user.id).single().then(({ data }) => setProfile(data))
       supabase.from('public_settings').select('*').eq('user_id', user.id).single().then(({ data }) => setSettings(data))
+      supabase.from('projects').select('mrr').eq('user_id', user.id).eq('status', 'live').then(({ data }) => {
+        setTotalMRR((data ?? []).reduce((s, p) => s + (p.mrr ?? 0), 0))
+      })
     })
   }, [])
 
@@ -155,7 +160,7 @@ export default function SettingsPage() {
         <section className="p-4 rounded space-y-2" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-xs tracking-widest" style={{ color: 'var(--text-dim)' }}>SHARE ON X</p>
           <a
-            href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(publicUrl)}&text=${encodeURIComponent('自分のプロダクト収益を公開しています #indiedash #個人開発')}`}
+            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(buildShareTweetText(publicUrl, totalMRR))}`}
             target="_blank" rel="noopener noreferrer"
             className="inline-block text-xs px-4 py-2 rounded font-bold"
             style={{ background: '#000', color: '#fff', border: '1px solid #333' }}>

@@ -8,10 +8,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [{ data: profile }, { data: settings }] = await Promise.all([
+  const [{ data: profile }, { data: settings }, { data: liveProjects }] = await Promise.all([
     supabase.from('profiles').select('plan, slug, email, is_admin').eq('id', user!.id).single(),
     supabase.from('public_settings').select('is_public').eq('user_id', user!.id).maybeSingle(),
+    supabase.from('projects').select('mrr').eq('user_id', user!.id).eq('status', 'live'),
   ])
+  const totalMRR = (liveProjects ?? []).reduce((s, p) => s + (p.mrr ?? 0), 0)
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>
@@ -91,7 +93,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* 右サイドバー（lg以上のみ） */}
       <aside className="hidden lg:flex w-64 flex-col border-l flex-shrink-0"
         style={{ borderColor: 'var(--border)' }}>
-        <AccountPanel profile={profile} settings={settings} />
+        <AccountPanel profile={profile} settings={settings} totalMRR={totalMRR} />
       </aside>
 
       {/* ボトムナビ（モバイルのみ） */}
