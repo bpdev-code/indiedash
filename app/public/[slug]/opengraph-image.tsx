@@ -59,9 +59,8 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const totalMRR = (projects ?? []).reduce((s: number, p: { mrr?: number }) => s + (p.mrr || 0), 0)
   const totalCustomers = (projects ?? []).reduce((s: number, p: { users_count?: number }) => s + (p.users_count || 0), 0)
 
-  const last6 = getLast6Months()
   const liveIds = (projects ?? []).map((p: { id: string }) => p.id)
-  let chartData: { month: string; total: number }[] = last6.map(m => ({ month: m, total: 0 }))
+  let chartData: { month: string; total: number }[] = []
   let growthRate: number | null = null
   let cumulativeMRR = 0
 
@@ -77,7 +76,6 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     for (const h of history ?? []) {
       totals[h.month] = (totals[h.month] ?? 0) + (h.mrr ?? 0)
     }
-    chartData = last6.map(m => ({ month: m, total: totals[m] ?? 0 }))
 
     const sortedMonths = Object.keys(totals).sort()
     cumulativeMRR = sortedMonths.reduce((s, m) => s + totals[m], 0)
@@ -86,13 +84,20 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       const curr = totals[sortedMonths[sortedMonths.length - 1]]
       if (prev > 0) growthRate = ((curr - prev) / prev) * 100
     }
+
+    // 実データが始まる前の月はチャートに含めない
+    if (sortedMonths.length > 0) {
+      const earliestMonth = sortedMonths[0]
+      const chartMonths = getLast6Months().filter(m => m >= earliestMonth)
+      chartData = chartMonths.map(m => ({ month: m, total: totals[m] ?? 0 }))
+    }
   }
 
   const growthLabel = growthRate === null ? '—' : `${growthRate >= 0 ? '+' : ''}${growthRate.toFixed(1)}%`
   const growthColor = growthRate === null ? '#666' : growthRate >= 0 ? '#10B981' : '#EF4444'
 
   const maxTotal = Math.max(...chartData.map(d => d.total), 1)
-  const hasHistory = chartData.some(d => d.total > 0)
+  const hasHistory = chartData.length > 0
   const fontData = await loadFont()
 
   // SVG line chart paths

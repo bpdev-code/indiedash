@@ -61,6 +61,7 @@ export default async function PublicDashboardPage({ params }: Props) {
   const liveIds = (projects ?? []).map(p => p.id)
   let growthRate: number | null = null
   let cumulativeMRR = 0
+  let chartData: { month: string; total: number }[] = []
 
   if (liveIds.length > 0) {
     const { data: history } = await supabase
@@ -80,27 +81,19 @@ export default async function PublicDashboardPage({ params }: Props) {
       const curr = totals[sortedMonths[sortedMonths.length - 1]]
       if (prev > 0) growthRate = ((curr - prev) / prev) * 100
     }
+
+    // トレンドチャート用（直近6ヶ月分、ただし実データが始まる前の月は描画しない）
+    if (sortedMonths.length > 0) {
+      const earliestMonth = sortedMonths[0]
+      const last6 = getLast6Months()
+      const chartMonths = last6.filter(m => m >= earliestMonth)
+      chartData = chartMonths.map(m => ({ month: m, total: totals[m] ?? 0 }))
+    }
   }
 
   const growthLabel = growthRate === null ? '—' : `${growthRate >= 0 ? '+' : ''}${growthRate.toFixed(1)}%`
   const growthColor = growthRate === null ? 'var(--text-dim)' : growthRate >= 0 ? '#10B981' : '#EF4444'
-
-  // トレンドチャート用（直近6ヶ月）
-  const last6 = getLast6Months()
-  const chartTotals: Record<string, number> = {}
-  if (liveIds.length > 0) {
-    const { data: recentHistory } = await supabase
-      .from('revenue_history')
-      .select('month, mrr')
-      .in('project_id', liveIds)
-      .gte('month', last6[0])
-      .order('month')
-    for (const h of recentHistory ?? []) {
-      chartTotals[h.month] = (chartTotals[h.month] ?? 0) + (h.mrr ?? 0)
-    }
-  }
-  const chartData = last6.map(m => ({ month: m, total: chartTotals[m] ?? 0 }))
-  const hasHistory = chartData.some(d => d.total > 0)
+  const hasHistory = chartData.length > 0
   const maxTotal = Math.max(...chartData.map(d => d.total), 1)
   const CW = 800, CH = 140, CPAD = 8
   const chartPoints = chartData.map((d, i) => ({
