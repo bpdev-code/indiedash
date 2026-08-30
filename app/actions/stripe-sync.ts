@@ -140,17 +140,18 @@ export async function syncProjectFromStripe(supabase: SupabaseClient<any>, proje
     .update({ mrr })
     .eq('id', projectId)
 
-  // revenue_historyに過去分すべてを反映（Stripe実データで上書き）
+  // revenue_historyを丸ごとStripeの実データで置き換える（手入力していた古い履歴が
+  // 混ざって残ってしまうのを防ぐため、upsertではなく一度削除してから入れ直す）
+  await supabase.from('revenue_history').delete().eq('project_id', projectId)
+
   const historyEntries = Object.entries(monthlyHistory)
   if (historyEntries.length > 0) {
-    await supabase.from('revenue_history').upsert(
-      historyEntries.map(([month, monthMrr]) => ({ project_id: projectId, month, mrr: monthMrr })),
-      { onConflict: 'project_id,month' }
+    await supabase.from('revenue_history').insert(
+      historyEntries.map(([month, monthMrr]) => ({ project_id: projectId, month, mrr: monthMrr }))
     )
   } else {
-    await supabase.from('revenue_history').upsert(
-      { project_id: projectId, month: currentMonth, mrr },
-      { onConflict: 'project_id,month' }
+    await supabase.from('revenue_history').insert(
+      { project_id: projectId, month: currentMonth, mrr }
     )
   }
 

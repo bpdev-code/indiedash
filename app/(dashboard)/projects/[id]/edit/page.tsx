@@ -11,7 +11,7 @@ export default async function EditProjectPage({ params }: Props) {
   const [{ data: project }, { data: history }] = await Promise.all([
     supabase
       .from('projects')
-      .select('id, name, status, color, mrr, price, payment_provider, launch_month, users_count')
+      .select('id, name, status, color, mrr, price, payment_provider, launch_month, users_count, stripe_secret_key')
       .eq('id', id)
       .single(),
     supabase
@@ -23,5 +23,9 @@ export default async function EditProjectPage({ params }: Props) {
 
   if (!project) return notFound()
 
-  return <EditPageClient project={project} initialHistory={history ?? []} />
+  // stripe_secret_keyはクライアントに渡さない（接続有無のフラグだけ渡す）
+  const { stripe_secret_key, ...safeProject } = project
+  const stripeConnected = !!stripe_secret_key
+
+  return <EditPageClient project={safeProject} initialHistory={history ?? []} stripeConnected={stripeConnected} />
 }

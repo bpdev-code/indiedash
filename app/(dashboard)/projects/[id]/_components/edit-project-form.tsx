@@ -29,9 +29,11 @@ const STATUSES = [
 export function EditProjectForm({
   project,
   onLaunchMonthChange,
+  stripeConnected,
 }: {
   project: EditableProject
   onLaunchMonthChange?: (month: string) => void
+  stripeConnected: boolean
 }) {
   const [error, setError] = useState<string | null>(null)
   const [color, setColor] = useState(project.color)
@@ -94,8 +96,17 @@ export function EditProjectForm({
       <div className="flex gap-3">
         <div className="flex-1">
           <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>MRR (円)</label>
-          <input name="mrr" type="number" min="0" defaultValue={project.mrr ?? 0}
-            className="w-full px-3 py-2 text-sm rounded" />
+          {stripeConnected ? (
+            <>
+              <p className="px-3 py-2 text-sm rounded" style={{ color: 'var(--text-dim)', border: '1px solid var(--border)' }}>
+                ¥{(project.mrr ?? 0).toLocaleString()}（自動取得）
+              </p>
+              <input type="hidden" name="mrr" value={project.mrr ?? 0} />
+            </>
+          ) : (
+            <input name="mrr" type="number" min="0" defaultValue={project.mrr ?? 0}
+              className="w-full px-3 py-2 text-sm rounded" />
+          )}
         </div>
         <div className="flex-1">
           <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>月額単価 (円)</label>

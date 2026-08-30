@@ -120,13 +120,14 @@ export default function StripeConnect({ projectId }: Props) {
       </div>
 
       {showGuide && (
-        <div className="text-xs space-y-1 p-3 rounded" style={{ background: '#0a0a0a', color: 'var(--text-muted)' }}>
+        <div className="text-xs space-y-1.5 p-3 rounded" style={{ background: '#0a0a0a', color: 'var(--text-muted)' }}>
           <p className="font-bold mb-2" style={{ color: 'var(--text)' }}>制限付きキーの作成手順</p>
-          <p>1. Stripeダッシュボードを開く</p>
-          <p>2. 開発者 → APIキー → 制限付きキーを作成</p>
-          <p>3. 名前: <span style={{ color: 'var(--accent)' }}>連携したいアプリ名</span></p>
-          <p>4. 権限: <span style={{ color: 'var(--accent)' }}>Subscriptions → 読み取り</span> のみON</p>
-          <p>5. 作成して <span style={{ color: 'var(--accent)' }}>rk_</span> で始まるキーをコピー</p>
+          <p>1. Stripeダッシュボード（本番環境）→ 開発者 → APIキー</p>
+          <p>2. 「制限付きのキーを作成」をクリック</p>
+          <p>3. 名前: <span style={{ color: 'var(--accent)' }}>INDIEDASH</span> など分かる名前を入力</p>
+          <p>4. 「このキーの使用方法」で <span style={{ color: 'var(--accent)' }}>このキーをサードパーティーのアプリケーションに提供する</span> を選択</p>
+          <p>5. 権限: <span style={{ color: 'var(--accent)' }}>Billing → Subscriptions → 読み取り(Read)</span> のみON（他はNoneのまま）</p>
+          <p>6. 作成して <span style={{ color: 'var(--accent)' }}>rk_</span> で始まるキーをコピーし、下に貼り付け</p>
         </div>
       )}
 
