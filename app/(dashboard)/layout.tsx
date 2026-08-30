@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from '@/app/actions/auth'
 import { AccountPanel } from './_components/account-panel'
+import { version } from '@/package.json'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -61,6 +62,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               LOGOUT
             </button>
           </form>
+          <p className="text-[10px] px-3" style={{ color: 'var(--text-dim)' }}>v{version}</p>
         </div>
       </aside>
 

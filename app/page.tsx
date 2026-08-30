@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { LandingMRRPreview } from './_components/landing-mrr-preview'
+import { version } from '@/package.json'
 
 const APP_URL = '/signup'
 const PUBLIC_HOST = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/^https?:\/\//, '') || 'indiedash.vercel.app'
@@ -218,7 +219,7 @@ export default function LandingPage() {
 
       <footer className="border-t py-6 text-center text-xs"
         style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}>
-        © 2026 INDIEDASH
+        © 2026 INDIEDASH · v{version}
       </footer>
     </div>
   )
