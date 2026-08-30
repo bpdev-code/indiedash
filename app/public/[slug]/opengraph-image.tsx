@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@/lib/supabase/server'
+import { buildAggregateChart } from '@/lib/public-chart'
 
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
@@ -18,16 +19,6 @@ async function loadFont(): Promise<ArrayBuffer | null> {
   } catch {
     return null
   }
-}
-
-function getLast6Months(): string[] {
-  const months = []
-  const now = new Date()
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
-  }
-  return months
 }
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
@@ -52,7 +43,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
   const { data: projects } = await supabase
     .from('projects')
-    .select('id, name, mrr, color, users_count')
+    .select('id, name, mrr, color, users_count, launch_month')
     .eq('user_id', profile.id)
     .eq('status', 'live')
 
@@ -60,21 +51,24 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const totalCustomers = (projects ?? []).reduce((s: number, p: { users_count?: number }) => s + (p.users_count || 0), 0)
 
   const liveIds = (projects ?? []).map((p: { id: string }) => p.id)
-  let chartData: { month: string; total: number }[] = []
+  let chartPointsData: { month: string; actual: number | null; forecast: number | null }[] = []
   let growthRate: number | null = null
   let cumulativeMRR = 0
+  const currentMonth = new Date().toISOString().slice(0, 7)
 
   if (liveIds.length > 0) {
-    // 全履歴を1回取得し、チャート用（直近6ヶ月）・前月比・累計売上の計算すべてに使い回す
     const { data: history } = await supabase
       .from('revenue_history')
-      .select('month, mrr')
+      .select('month, mrr, project_id')
       .in('project_id', liveIds)
       .order('month')
 
     const totals: Record<string, number> = {}
+    const historyByProject: Record<string, Record<string, number>> = {}
     for (const h of history ?? []) {
       totals[h.month] = (totals[h.month] ?? 0) + (h.mrr ?? 0)
+      if (!historyByProject[h.project_id]) historyByProject[h.project_id] = {}
+      historyByProject[h.project_id][h.month] = h.mrr ?? 0
     }
 
     const sortedMonths = Object.keys(totals).sort()
@@ -85,29 +79,42 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       if (prev > 0) growthRate = ((curr - prev) / prev) * 100
     }
 
-    // 実データが始まる前の月はチャートに含めない
-    if (sortedMonths.length > 0) {
-      const earliestMonth = sortedMonths[0]
-      const chartMonths = getLast6Months().filter(m => m >= earliestMonth)
-      chartData = chartMonths.map(m => ({ month: m, total: totals[m] ?? 0 }))
-    }
+    chartPointsData = buildAggregateChart(
+      (projects ?? []).map((p: { id: string; mrr?: number; launch_month?: string | null }) =>
+        ({ id: p.id, mrr: p.mrr ?? 0, launchMonth: p.launch_month ?? null })),
+      historyByProject,
+      currentMonth
+    )
   }
 
   const growthLabel = growthRate === null ? '—' : `${growthRate >= 0 ? '+' : ''}${growthRate.toFixed(1)}%`
   const growthColor = growthRate === null ? '#666' : growthRate >= 0 ? '#10B981' : '#EF4444'
 
-  const maxTotal = Math.max(...chartData.map(d => d.total), 1)
-  const hasHistory = chartData.length > 0
+  const maxTotal = Math.max(...chartPointsData.map(d => d.actual ?? d.forecast ?? 0), 1)
+  const hasHistory = chartPointsData.some(d => d.actual != null || d.forecast != null)
   const fontData = await loadFont()
 
   // SVG line chart paths
   const CW = 1056, CH = 72, PX = 6, PY = 6
-  const chartPoints = chartData.map((d, i) => ({
-    x: PX + (chartData.length > 1 ? (i / (chartData.length - 1)) : 0.5) * (CW - PX * 2),
-    y: PY + (1 - d.total / maxTotal) * (CH - PY * 2),
-  }))
-  const linePath = chartPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
-  const areaPath = `${linePath} L${chartPoints[chartPoints.length - 1].x.toFixed(1)},${CH} L${chartPoints[0].x.toFixed(1)},${CH} Z`
+  const n = chartPointsData.length
+  const xAt = (i: number) => PX + (n > 1 ? i / (n - 1) : 0.5) * (CW - PX * 2)
+  const yAt = (v: number) => PY + (1 - v / maxTotal) * (CH - PY * 2)
+
+  const actualPts = chartPointsData
+    .map((d, i) => (d.actual != null ? { x: xAt(i), y: yAt(d.actual) } : null))
+    .filter((p): p is { x: number; y: number } => p !== null)
+  const actualLine = actualPts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  const areaPath = actualPts.length > 0
+    ? `${actualLine} L${actualPts[actualPts.length - 1].x.toFixed(1)},${CH} L${actualPts[0].x.toFixed(1)},${CH} Z`
+    : ''
+
+  const forecastPts = chartPointsData
+    .map((d, i) => (d.forecast != null ? { x: xAt(i), y: yAt(d.forecast) } : null))
+    .filter((p): p is { x: number; y: number } => p !== null)
+  const forecastLine = actualPts.length > 0 && forecastPts.length > 0
+    ? `M${actualPts[actualPts.length - 1].x.toFixed(1)},${actualPts[actualPts.length - 1].y.toFixed(1)} ` +
+      forecastPts.map(p => `L${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+    : ''
 
   return new ImageResponse(
     (
@@ -157,17 +164,21 @@ export default async function Image({ params }: { params: Promise<{ slug: string
             </span>
             <svg width={CW} height={CH} viewBox={`0 0 ${CW} ${CH}`} style={{ display: 'block' }}>
               <path d={areaPath} fill="#00E5FF" fillOpacity="0.08" />
-              <path d={linePath} fill="none" stroke="#00E5FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              {chartPoints.map((p, i) => (
-                <circle key={i} cx={p.x} cy={p.y}
-                  r={i === chartPoints.length - 1 ? 5 : 3}
-                  fill={i === chartPoints.length - 1 ? '#00E5FF' : '#080808'}
+              <path d={actualLine} fill="none" stroke="#00E5FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d={forecastLine} fill="none" stroke="#00E5FF" strokeWidth="1.5" strokeDasharray="4 4" strokeOpacity="0.5" />
+              {actualPts.map((p, i) => (
+                <circle key={`a${i}`} cx={p.x} cy={p.y}
+                  r={i === actualPts.length - 1 ? 5 : 3}
+                  fill={i === actualPts.length - 1 ? '#00E5FF' : '#080808'}
                   stroke="#00E5FF" strokeWidth="1.5" />
+              ))}
+              {forecastPts.map((p, i) => (
+                <circle key={`f${i}`} cx={p.x} cy={p.y} r={3} fill="#080808" stroke="#00E5FF" strokeWidth="1.5" strokeOpacity="0.5" />
               ))}
             </svg>
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6 }}>
-              {chartData.map((d, i) => (
-                <span key={i} style={{ fontSize: 11, color: i === chartData.length - 1 ? '#555' : '#2a2a2a' }}>
+              {chartPointsData.map((d, i) => (
+                <span key={i} style={{ fontSize: 11, color: d.month === currentMonth ? '#555' : '#2a2a2a' }}>
                   {parseInt(d.month.split('-')[1])}月
                 </span>
               ))}
