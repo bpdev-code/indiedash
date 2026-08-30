@@ -52,23 +52,25 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
   const { data: projects } = await supabase
     .from('projects')
-    .select('id, name, mrr, color')
+    .select('id, name, mrr, color, users_count')
     .eq('user_id', profile.id)
     .eq('status', 'live')
 
   const totalMRR = (projects ?? []).reduce((s: number, p: { mrr?: number }) => s + (p.mrr || 0), 0)
+  const totalCustomers = (projects ?? []).reduce((s: number, p: { users_count?: number }) => s + (p.users_count || 0), 0)
 
-  // Fetch last 6 months of history for the chart
   const last6 = getLast6Months()
   const liveIds = (projects ?? []).map((p: { id: string }) => p.id)
   let chartData: { month: string; total: number }[] = last6.map(m => ({ month: m, total: 0 }))
+  let growthRate: number | null = null
+  let cumulativeMRR = 0
 
   if (liveIds.length > 0) {
+    // 全履歴を1回取得し、チャート用（直近6ヶ月）・前月比・累計売上の計算すべてに使い回す
     const { data: history } = await supabase
       .from('revenue_history')
       .select('month, mrr')
       .in('project_id', liveIds)
-      .gte('month', last6[0])
       .order('month')
 
     const totals: Record<string, number> = {}
@@ -76,7 +78,18 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       totals[h.month] = (totals[h.month] ?? 0) + (h.mrr ?? 0)
     }
     chartData = last6.map(m => ({ month: m, total: totals[m] ?? 0 }))
+
+    const sortedMonths = Object.keys(totals).sort()
+    cumulativeMRR = sortedMonths.reduce((s, m) => s + totals[m], 0)
+    if (sortedMonths.length >= 2) {
+      const prev = totals[sortedMonths[sortedMonths.length - 2]]
+      const curr = totals[sortedMonths[sortedMonths.length - 1]]
+      if (prev > 0) growthRate = ((curr - prev) / prev) * 100
+    }
   }
+
+  const growthLabel = growthRate === null ? '—' : `${growthRate >= 0 ? '+' : ''}${growthRate.toFixed(1)}%`
+  const growthColor = growthRate === null ? '#666' : growthRate >= 0 ? '#10B981' : '#EF4444'
 
   const maxTotal = Math.max(...chartData.map(d => d.total), 1)
   const hasHistory = chartData.some(d => d.total > 0)
@@ -105,14 +118,30 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           <span style={{ fontSize: 13, color: '#444', marginLeft: 14 }}>/{slug}</span>
         </div>
 
-        {/* MRR */}
-        <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 28 }}>
-          <span style={{ fontSize: 12, color: '#444', letterSpacing: 3, marginBottom: 6 }}>
-            MONTHLY RECURRING REVENUE
-          </span>
-          <span style={{ fontSize: 88, fontWeight: 700, color: '#00E5FF', lineHeight: 1 }}>
-            ¥{totalMRR.toLocaleString()}
-          </span>
+        {/* MRR + KPIs */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 12, color: '#444', letterSpacing: 3, marginBottom: 6 }}>
+              MONTHLY RECURRING REVENUE
+            </span>
+            <span style={{ fontSize: 88, fontWeight: 700, color: '#00E5FF', lineHeight: 1 }}>
+              ¥{totalMRR.toLocaleString()}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 32 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <span style={{ fontSize: 11, color: '#444', letterSpacing: 2, marginBottom: 6 }}>前月比</span>
+              <span style={{ fontSize: 30, fontWeight: 700, color: growthColor }}>{growthLabel}</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <span style={{ fontSize: 11, color: '#444', letterSpacing: 2, marginBottom: 6 }}>累計売上</span>
+              <span style={{ fontSize: 30, fontWeight: 700, color: '#fff' }}>¥{cumulativeMRR.toLocaleString()}</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <span style={{ fontSize: 11, color: '#444', letterSpacing: 2, marginBottom: 6 }}>顧客数</span>
+              <span style={{ fontSize: 30, fontWeight: 700, color: '#fff' }}>{totalCustomers.toLocaleString()}</span>
+            </div>
+          </div>
         </div>
 
         {/* Line Chart */}
