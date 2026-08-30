@@ -36,7 +36,7 @@ export function EditPageClient({
 
       {stripeConnected && (
         <p className="text-xs pt-4 border-t" style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}>
-          Stripe連携中は、MRRと収益履歴はStripeから自動的に取得されるため手入力は不要です。
+          Stripe連携中は、MRR・顧客数・収益履歴はStripeから自動的に取得されるため手入力は不要です。
         </p>
       )}
     </div>

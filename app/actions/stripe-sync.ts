@@ -45,10 +45,13 @@ function monthlyAmountForItems(items: Stripe.SubscriptionItem[]): number {
   return total
 }
 
-// 全サブスクリプション（解約済み含む）を開始月〜終了月で走査し、月ごとのMRRを再構築する
-async function computeMonthlyMRRHistory(stripe: Stripe): Promise<Record<string, number>> {
+// 全サブスクリプション（解約済み含む）を開始月〜終了月で走査し、月ごとのMRRを再構築する。
+// あわせて「現在アクティブなサブスクリプション数」も顧客数として数える
+// （1サブスクリプション=1顧客という単純化した前提。複数サブスクを持つ顧客は考慮しない）
+async function computeMonthlyMRRHistory(stripe: Stripe): Promise<{ monthlyTotals: Record<string, number>; customerCount: number }> {
   const currentMonth = new Date().toISOString().slice(0, 7)
   const monthlyTotals: Record<string, number> = {}
+  let customerCount = 0
 
   let hasMore = true
   let startingAfter: string | undefined
@@ -63,6 +66,8 @@ async function computeMonthlyMRRHistory(stripe: Stripe): Promise<Record<string, 
     for (const sub of subs.data) {
       const monthlyAmount = monthlyAmountForItems(sub.items.data)
       if (monthlyAmount <= 0) continue
+
+      if (sub.status === 'active' || sub.status === 'trialing') customerCount++
 
       const startMonth = new Date((sub.start_date ?? sub.created) * 1000).toISOString().slice(0, 7)
       const endTimestamp = sub.ended_at ?? sub.canceled_at
@@ -83,7 +88,7 @@ async function computeMonthlyMRRHistory(stripe: Stripe): Promise<Record<string, 
     }
   }
 
-  return monthlyTotals
+  return { monthlyTotals, customerCount }
 }
 
 export async function connectStripe(projectId: string, secretKey: string) {
@@ -131,13 +136,13 @@ export async function syncProjectFromStripe(supabase: SupabaseClient<any>, proje
   const stripe = new Stripe(secretKey, { apiVersion: '2026-05-27.dahlia' })
 
   // 全サブスクリプション（解約済み含む）から月ごとのMRR履歴を再構築
-  const monthlyHistory = await computeMonthlyMRRHistory(stripe)
+  const { monthlyTotals: monthlyHistory, customerCount } = await computeMonthlyMRRHistory(stripe)
   const currentMonth = new Date().toISOString().slice(0, 7)
   const mrr = monthlyHistory[currentMonth] ?? 0
 
   await supabase
     .from('projects')
-    .update({ mrr })
+    .update({ mrr, users_count: customerCount })
     .eq('id', projectId)
 
   // revenue_historyを丸ごとStripeの実データで置き換える（手入力していた古い履歴が

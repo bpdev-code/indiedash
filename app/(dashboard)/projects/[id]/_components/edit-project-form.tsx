@@ -115,9 +115,18 @@ export function EditProjectForm({
         </div>
         <div className="flex-1">
           <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>顧客数</label>
-          <input name="users_count" type="number" min="0" defaultValue={project.users_count ?? 0}
-            autoComplete="off"
-            className="w-full px-3 py-2 text-sm rounded" />
+          {stripeConnected ? (
+            <>
+              <p className="px-3 py-2 text-sm rounded" style={{ color: 'var(--text-dim)', border: '1px solid var(--border)' }}>
+                {(project.users_count ?? 0).toLocaleString()}（自動取得）
+              </p>
+              <input type="hidden" name="users_count" value={project.users_count ?? 0} />
+            </>
+          ) : (
+            <input name="users_count" type="number" min="0" defaultValue={project.users_count ?? 0}
+              autoComplete="off"
+              className="w-full px-3 py-2 text-sm rounded" />
+          )}
         </div>
       </div>
 
