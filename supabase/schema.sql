@@ -146,3 +146,20 @@ alter table login_attempts enable row level security;
 
 -- 自分のアカウントを管理者にする（メールアドレスは必要に応じて変更してください）
 update profiles set is_admin = true where email = 'bpdev.nft@gmail.com';
+
+-- ============================================================
+-- Site page views (2026-08-31)
+-- ============================================================
+-- サーバー側（service role経由、ミドルウェア）のみが書き込む。RLSは有効だが
+-- ポリシーを一切定義しないことで、anon/authenticatedからのアクセスを遮断する。
+-- 管理者向けの集計は admin ページがservice roleで読み取って表示する。
+
+create table if not exists page_views (
+  id uuid primary key default gen_random_uuid(),
+  path text not null,
+  created_at timestamptz default now()
+);
+
+create index if not exists page_views_created_at_idx on page_views (created_at);
+
+alter table page_views enable row level security;
