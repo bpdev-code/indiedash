@@ -81,7 +81,7 @@ export default function MRRChart({ data, projects, currentMonth }: Props) {
 
   return (
     <ResponsiveContainer width="100%" height={180}>
-      <ComposedChart data={data} margin={{ top: 18, right: 8, left: 0, bottom: 0 }}>
+      <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <defs>
           {projects.map((p, i) => (
             <linearGradient key={p.id} id={`mrr-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
@@ -109,7 +109,6 @@ export default function MRRChart({ data, projects, currentMonth }: Props) {
           x={currentMonth}
           stroke="#333"
           strokeDasharray="3 3"
-          label={{ value: 'NOW', position: 'top', fontSize: 9, fill: '#444' }}
         />
         {projects.map((p, i) => (
           <>
