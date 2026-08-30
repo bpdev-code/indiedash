@@ -60,29 +60,44 @@ export async function createStripeCheckout() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: '未ログイン' }
 
+  const userId = user.id
+
   try {
+    const Stripe = (await import('stripe')).default
     const { stripe } = await import('@/lib/stripe')
     const { data: profile } = await supabase
       .from('profiles')
       .select('stripe_customer_id, email')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single()
 
-    let customerId = profile?.stripe_customer_id
-    if (!customerId) {
+    async function createNewCustomer() {
       const customer = await stripe.customers.create({ email: profile?.email ?? undefined })
-      customerId = customer.id
-      await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user.id)
+      await supabase.from('profiles').update({ stripe_customer_id: customer.id }).eq('id', userId)
+      return customer.id
     }
 
-    const session = await stripe.checkout.sessions.create({
+    let customerId = profile?.stripe_customer_id ?? (await createNewCustomer())
+
+    const checkoutParams = {
       customer: customerId,
-      payment_method_types: ['card'],
+      payment_method_types: ['card' as const],
       line_items: [{ price: process.env.STRIPE_PRO_PRICE_ID, quantity: 1 }],
-      mode: 'subscription',
+      mode: 'subscription' as const,
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?upgraded=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
-    })
+    }
+
+    let session
+    try {
+      session = await stripe.checkout.sessions.create(checkoutParams)
+    } catch (err) {
+      // stripe_customer_id が無効（テスト/本番切り替えや顧客削除など）な場合は作り直して再試行
+      const isMissingCustomer = err instanceof Stripe.errors.StripeInvalidRequestError && err.code === 'resource_missing'
+      if (!isMissingCustomer) throw err
+      customerId = await createNewCustomer()
+      session = await stripe.checkout.sessions.create({ ...checkoutParams, customer: customerId })
+    }
 
     return { url: session.url }
   } catch (err) {
