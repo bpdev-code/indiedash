@@ -48,7 +48,11 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
   // ページビュー記録（管理者用の集計に使う）。レスポンスをブロックせず、
   // Next.jsのリンクprefetchによる実際のアクセスでないリクエストは除外する
-  if (!request.headers.get('next-router-prefetch')) {
+  // （通常のprefetchヘッダーに加え、Next.js 16のセグメント単位prefetchヘッダーも見る）
+  const isPrefetch =
+    request.headers.get('next-router-prefetch') ||
+    request.headers.get('next-router-segment-prefetch')
+  if (!isPrefetch) {
     event.waitUntil(
       (async () => {
         try {
