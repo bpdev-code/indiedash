@@ -2,9 +2,23 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest, type NextFetchEvent } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+const VISITOR_COOKIE = 'iv_id'
+
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.startsWith('http')) {
     return new NextResponse('Server configuration error', { status: 500 })
+  }
+
+  // 匿名訪問者ID（ユニーク訪問者数の集計用）。既存Cookieが無ければ新規発行する
+  const existingVisitorId = request.cookies.get(VISITOR_COOKIE)?.value
+  const visitorId = existingVisitorId ?? crypto.randomUUID()
+  function withVisitorCookie(res: NextResponse) {
+    if (!existingVisitorId) {
+      res.cookies.set(VISITOR_COOKIE, visitorId, {
+        httpOnly: true, secure: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 400, path: '/',
+      })
+    }
+    return res
   }
 
   let supabaseResponse = NextResponse.next({ request })
@@ -38,7 +52,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     event.waitUntil(
       (async () => {
         try {
-          await createAdminClient().from('page_views').insert({ path })
+          await createAdminClient().from('page_views').insert({ path, visitor_id: visitorId, user_id: user?.id ?? null })
         } catch {
           // 記録失敗はページ表示に影響させない
         }
@@ -54,13 +68,13 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const isAuthPage = path === '/login' || path === '/signup'
 
   if (isProtected && !user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return withVisitorCookie(NextResponse.redirect(new URL('/login', request.url)))
   }
   if (isAuthPage && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return withVisitorCookie(NextResponse.redirect(new URL('/dashboard', request.url)))
   }
 
-  return supabaseResponse
+  return withVisitorCookie(supabaseResponse)
 }
 
 export const config = {

@@ -157,9 +157,12 @@ update profiles set is_admin = true where email = 'bpdev.nft@gmail.com';
 create table if not exists page_views (
   id uuid primary key default gen_random_uuid(),
   path text not null,
+  visitor_id text,
+  user_id uuid references profiles(id) on delete set null,
   created_at timestamptz default now()
 );
 
 create index if not exists page_views_created_at_idx on page_views (created_at);
+create index if not exists page_views_visitor_idx on page_views (visitor_id);
 
 alter table page_views enable row level security;
