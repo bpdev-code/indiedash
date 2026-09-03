@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
-import { DemoApp } from './demo-app'
+import { DemoDashboardView } from './dashboard-view'
 
 export const metadata: Metadata = {
   title: 'サンプルダッシュボード',
@@ -17,7 +17,7 @@ export default async function DemoPage({
 
   return (
     <Suspense fallback={null}>
-      <DemoApp period={period} project={project} />
+      <DemoDashboardView period={period} project={project} />
     </Suspense>
   )
 }

@@ -125,7 +125,8 @@ export async function importDemoProjects(rawItems: unknown) {
   let skipped = 0
 
   for (const item of items) {
-    if (existing >= limit) { skipped++; continue }
+    const countsTowardLimit = item.status !== 'archived'
+    if (countsTowardLimit && existing >= limit) { skipped++; continue }
 
     const color = DEMO_COLORS.includes(item.color) ? item.color : DEMO_COLORS[0]
     const { data: project, error } = await supabase
@@ -133,9 +134,10 @@ export async function importDemoProjects(rawItems: unknown) {
       .insert({
         user_id: user.id,
         name: item.name,
-        status: 'live',
+        status: item.status,
         color,
         mrr: item.mrr,
+        price: item.price,
         users_count: item.customers,
         payment_provider: 'manual',
         launch_month: item.launchMonth,
@@ -145,8 +147,16 @@ export async function importDemoProjects(rawItems: unknown) {
 
     if (error || !project) { skipped++; continue }
 
-    await backfillRevenueHistory(supabase, project.id, item.mrr, item.launchMonth)
-    existing++
+    // サンプルで編集した月次履歴をそのまま持ち込む
+    const rows = Object.entries(item.history).map(([month, mrr]) => ({
+      project_id: project.id, month, mrr: Math.max(0, Math.round(mrr)),
+    }))
+    if (rows.length > 0) {
+      await supabase.from('revenue_history').upsert(rows, { onConflict: 'project_id,month' })
+    } else {
+      await backfillRevenueHistory(supabase, project.id, item.mrr, item.launchMonth)
+    }
+    if (countsTowardLimit) existing++
     imported++
   }
 
