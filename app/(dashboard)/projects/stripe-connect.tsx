@@ -11,6 +11,7 @@ export default function StripeConnect({ projectId }: Props) {
   const [connected, setConnected] = useState(false)
   const [mrr, setMrr] = useState(0)
   const [plan, setPlan] = useState<string>('free')
+  const [freeSlotUsedByOther, setFreeSlotUsedByOther] = useState(false)
   const [key, setKey] = useState('')
   const [showGuide, setShowGuide] = useState(false)
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null)
@@ -21,6 +22,7 @@ export default function StripeConnect({ projectId }: Props) {
       setConnected(s.connected)
       setMrr(s.mrr)
       setPlan(s.plan)
+      setFreeSlotUsedByOther(s.freeSlotUsedByOther)
     })
   }, [projectId])
 
@@ -63,7 +65,7 @@ export default function StripeConnect({ projectId }: Props) {
     })
   }
 
-  if (plan === 'free' && !connected) {
+  if (plan === 'free' && !connected && freeSlotUsedByOther) {
     return (
       <div className="p-3 rounded space-y-1" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         <div className="flex items-center justify-between">
@@ -72,7 +74,7 @@ export default function StripeConnect({ projectId }: Props) {
             style={{ background: 'var(--accent)', color: '#000' }}>PRO</span>
         </div>
         <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-          PROプランにアップグレードするとStripeから自動でMRRを取得できます
+          無料プランのStripe連携枠（1プロジェクトまで）は他のプロジェクトで使用中です。複数連携するにはPROプランへアップグレードしてください
         </p>
       </div>
     )

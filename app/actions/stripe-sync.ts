@@ -97,7 +97,20 @@ export async function connectStripe(projectId: string, secretKey: string) {
   if (!user) return { error: '未ログイン' }
 
   const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
-  if (profile?.plan !== 'pro') return { error: 'Stripe連携はPROプランのみご利用いただけます' }
+
+  // 無料プランはStripe連携1プロジェクトまで。すでに他のプロジェクトで使っていたら拒否する
+  if (profile?.plan !== 'pro') {
+    const { count } = await supabase
+      .from('projects')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .not('stripe_secret_key', 'is', null)
+      .neq('id', projectId)
+
+    if ((count ?? 0) >= 1) {
+      return { error: 'Stripe連携は無料プランでは1プロジェクトまでです。複数連携するにはPROプランへアップグレードしてください。' }
+    }
+  }
 
   // キーの形式チェック
   if (!secretKey.startsWith('sk_') && !secretKey.startsWith('rk_')) {
@@ -202,16 +215,28 @@ export async function disconnectStripe(projectId: string) {
 export async function getStripeStatus(projectId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { connected: false, mrr: 0, plan: 'free' }
+  if (!user) return { connected: false, mrr: 0, plan: 'free', freeSlotUsedByOther: false }
 
   const [{ data: project }, { data: profile }] = await Promise.all([
     supabase.from('projects').select('stripe_secret_key, mrr').eq('id', projectId).eq('user_id', user.id).single(),
     supabase.from('profiles').select('plan').eq('id', user.id).single(),
   ])
 
+  let freeSlotUsedByOther = false
+  if (profile?.plan !== 'pro' && !project?.stripe_secret_key) {
+    const { count } = await supabase
+      .from('projects')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .not('stripe_secret_key', 'is', null)
+      .neq('id', projectId)
+    freeSlotUsedByOther = (count ?? 0) >= 1
+  }
+
   return {
     connected: !!project?.stripe_secret_key,
     mrr: project?.mrr ?? 0,
     plan: profile?.plan ?? 'free',
+    freeSlotUsedByOther,
   }
 }
