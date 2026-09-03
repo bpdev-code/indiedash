@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { ProjectStatus } from '@/types'
+import { DEMO_COLORS, DEMO_MAX_PROJECTS, sanitizeDemoProjects } from '@/lib/demo-store'
 
 function generateMonthsBetween(from: string, to: string): string[] {
   const months: string[] = []
@@ -94,6 +95,64 @@ export async function createProject(formData: FormData) {
   revalidatePath('/dashboard')
   revalidatePath('/projects')
   redirect('/projects')
+}
+
+// お試し（/demo）で作ったプロジェクトを、サインイン後のアカウントへ取り込む。
+// クライアントの localStorage から渡された配列をそのまま信用せず、sanitize してから挿入する。
+export async function importDemoProjects(rawItems: unknown) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const items = sanitizeDemoProjects(rawItems).slice(0, DEMO_MAX_PROJECTS)
+  if (items.length === 0) return { imported: 0, skipped: 0 }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('plan')
+    .eq('id', user.id)
+    .single()
+
+  const { count } = await supabase
+    .from('projects')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .neq('status', 'archived')
+
+  const limit = profile?.plan === 'free' ? 3 : Infinity
+  let existing = count ?? 0
+  let imported = 0
+  let skipped = 0
+
+  for (const item of items) {
+    if (existing >= limit) { skipped++; continue }
+
+    const color = DEMO_COLORS.includes(item.color) ? item.color : DEMO_COLORS[0]
+    const { data: project, error } = await supabase
+      .from('projects')
+      .insert({
+        user_id: user.id,
+        name: item.name,
+        status: 'live',
+        color,
+        mrr: item.mrr,
+        users_count: item.customers,
+        payment_provider: 'manual',
+        launch_month: item.launchMonth,
+      })
+      .select('id')
+      .single()
+
+    if (error || !project) { skipped++; continue }
+
+    await backfillRevenueHistory(supabase, project.id, item.mrr, item.launchMonth)
+    existing++
+    imported++
+  }
+
+  revalidatePath('/dashboard')
+  revalidatePath('/projects')
+  return { imported, skipped }
 }
 
 export async function updateProject(id: string, formData: FormData) {

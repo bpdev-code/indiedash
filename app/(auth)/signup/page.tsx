@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useSyncExternalStore, useTransition } from 'react'
 import { signUp } from '@/app/actions/auth'
+import { subscribeDemo, getDemoSnapshot, getDemoServerSnapshot } from '@/lib/demo-store'
 import Link from 'next/link'
 
 export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  // localStorage に保存済みのお試しデータの件数（無ければ 0）
+  const demoCount = useSyncExternalStore(subscribeDemo, getDemoSnapshot, getDemoServerSnapshot).length
 
   function handleSubmit(formData: FormData) {
     setError(null)
@@ -21,6 +24,13 @@ export default function SignupPage() {
       <h1 className="text-sm font-bold tracking-widest mb-6" style={{ color: 'var(--text-muted)' }}>
         SIGN UP
       </h1>
+
+      {demoCount > 0 && (
+        <p className="text-xs rounded p-3 mb-5"
+          style={{ background: '#0a1a0a', border: '1px solid var(--accent)', color: 'var(--text-muted)' }}>
+          サンプルで作った{demoCount}件のプロジェクトは、アカウント作成後に取り込めます。
+        </p>
+      )}
 
       <form action={handleSubmit} className="space-y-4">
         <div>

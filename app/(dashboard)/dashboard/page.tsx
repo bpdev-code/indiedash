@@ -4,6 +4,7 @@ import Link from 'next/link'
 import MRRChart from './mrr-chart'
 import PeriodSelector from './period-selector'
 import ProjectSelector from './project-selector'
+import { DemoImportBanner } from '../_components/demo-import-banner'
 
 const STATUS_COLOR: Record<string, string> = {
   idea: '#444', dev: '#7C3AED', live: '#00E5FF', archived: '#333',
@@ -210,6 +211,8 @@ export default async function DashboardPage({
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6 md:space-y-8">
+      <DemoImportBanner />
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
