@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { updateSlug, updatePublicSettings, createStripeCheckout } from '@/app/actions/settings'
+import { updateSlug, updatePublicSettings, createStripeCheckout, createBillingPortalSession } from '@/app/actions/settings'
 import { buildShareTweetText } from '@/lib/share-text'
 import type { Profile, PublicSettings } from '@/types'
 
@@ -11,6 +11,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<PublicSettings | null>(null)
   const [totalMRR, setTotalMRR] = useState(0)
   const [slugMsg, setSlugMsg] = useState<string | null>(null)
+  const [planMsg, setPlanMsg] = useState<string | null>(null)
   const [isPendingSlug, startSlug] = useTransition()
   const [isPendingPublic, startPublic] = useTransition()
   const [isPendingStripe, startStripe] = useTransition()
@@ -62,6 +63,15 @@ export default function SettingsPage() {
     })
   }
 
+  function handleManagePlan() {
+    setPlanMsg(null)
+    startStripe(async () => {
+      const result = await createBillingPortalSession()
+      if (result?.url) window.location.href = result.url
+      else if (result?.error) setPlanMsg(result.error)
+    })
+  }
+
   return (
     <div className="max-w-lg mx-auto space-y-8">
       <h1 className="text-xs tracking-widest" style={{ color: 'var(--text-dim)' }}>SETTINGS</h1>
@@ -75,11 +85,17 @@ export default function SettingsPage() {
               {profile.plan === 'pro' ? 'PRO' : 'FREE'}
             </p>
           </div>
-          {profile.plan === 'free' && (
+          {profile.plan === 'free' ? (
             <button onClick={handleUpgrade} disabled={isPendingStripe}
               className="text-xs px-4 py-2 rounded font-bold transition-opacity"
               style={{ background: 'var(--accent)', color: '#000', opacity: isPendingStripe ? 0.6 : 1 }}>
               {isPendingStripe ? '...' : 'UPGRADE — ¥300/月'}
+            </button>
+          ) : (
+            <button onClick={handleManagePlan} disabled={isPendingStripe}
+              className="text-xs px-4 py-2 rounded font-bold transition-opacity"
+              style={{ color: 'var(--text-muted)', border: '1px solid var(--border)', opacity: isPendingStripe ? 0.6 : 1 }}>
+              {isPendingStripe ? '...' : 'プランを管理・解約'}
             </button>
           )}
         </div>
@@ -89,6 +105,7 @@ export default function SettingsPage() {
             <li>• Stripe連携は1プロジェクトまで</li>
           </ul>
         )}
+        {planMsg && <p className="text-xs" style={{ color: '#ff4444' }}>{planMsg}</p>}
       </section>
 
       {/* Slug */}
@@ -148,9 +165,9 @@ export default function SettingsPage() {
         {!profile.slug && (
           <p className="text-xs" style={{ color: '#ff4444' }}>slug を設定してから公開できます</p>
         )}
-        {profile.plan === 'free' && settings?.is_public && (
+        {settings?.is_public && (
           <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-            無料プランでは「Powered by INDIEDASH」バッジが表示されます
+            公開ページには「Powered by INDIEDASH」バッジが表示されます
           </p>
         )}
       </section>

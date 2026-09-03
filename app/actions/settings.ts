@@ -105,3 +105,37 @@ export async function createStripeCheckout() {
     return { error: message }
   }
 }
+
+// PROプランの解約・支払い方法変更・請求書確認はStripeの顧客ポータルに任せる。
+// ここで発行したURLに飛ばすだけで、解約されればWebhook経由で自動的にplanがfreeに戻る
+export async function createBillingPortalSession() {
+  const stripeKey = process.env.STRIPE_SECRET_KEY
+  if (!stripeKey || stripeKey.startsWith('your_')) {
+    return { error: 'VercelにStripe APIキーを設定してください' }
+  }
+  if (!process.env.NEXT_PUBLIC_APP_URL) return { error: 'APP_URL が設定されていません' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: '未ログイン' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('stripe_customer_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.stripe_customer_id) return { error: '契約情報が見つかりません' }
+
+  try {
+    const { stripe } = await import('@/lib/stripe')
+    const session = await stripe.billingPortal.sessions.create({
+      customer: profile.stripe_customer_id,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
+    })
+    return { url: session.url }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'エラーが発生しました'
+    return { error: message }
+  }
+}
