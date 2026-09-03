@@ -1,6 +1,11 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { LandingMRRPreview } from './_components/landing-mrr-preview'
 import { version } from '@/package.json'
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+}
 
 const APP_URL = '/signup'
 const PUBLIC_HOST = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/^https?:\/\//, '') || 'indiedash.vercel.app'
@@ -15,6 +20,7 @@ export default function LandingPage() {
           INDIE<span style={{ color: 'var(--accent)' }}>DASH</span>
         </span>
         <div className="flex items-center gap-4 text-sm">
+          <Link href="/demo" style={{ color: 'var(--text-muted)' }}>サンプル</Link>
           <Link href="/login" style={{ color: 'var(--text-muted)' }}>Login</Link>
           <Link href={APP_URL} className="px-4 py-1.5 rounded text-xs font-bold"
             style={{ background: 'var(--accent)', color: '#000' }}>
@@ -24,37 +30,44 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="flex flex-col items-center justify-center px-4 py-24 text-center">
+      <section className="flex flex-col items-center justify-center px-4 py-16 md:py-20 text-center">
         <p className="text-xs tracking-widest mb-6" style={{ color: 'var(--accent)' }}>FOR INDIE HACKERS</p>
         <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-          複数アプリの収益を、<br />1つのURLで公開。
+          複数アプリのMRRを、<br />1画面で管理・公開。
         </h1>
-        <p className="text-sm max-w-lg mb-3" style={{ color: 'var(--text-muted)' }}>
-          毎月Xで収益報告していますか？スクショを撮って、数字をまとめて、テキストを書いて——
+        <p className="text-base max-w-lg mb-3" style={{ color: 'var(--text-muted)' }}>
+          バラバラのStripe・スプレッドシートを、1つのダッシュボードに集約。
         </p>
-        <p className="text-sm max-w-lg mb-10 font-bold">
-          INDIEDASHなら、URLを貼るだけで終わります。
+        <p className="text-base max-w-lg mb-10 font-bold">
+          そのまま公開URLにすれば、毎月の収益報告はリンクを貼るだけ。
         </p>
-        <Link href={APP_URL} className="px-10 py-3 rounded font-bold text-sm mb-3"
-          style={{ background: 'var(--accent)', color: '#000' }}>
-          無料で始める →
-        </Link>
-        <p className="text-xs" style={{ color: 'var(--text-dim)' }}>クレジットカード不要</p>
+        <div className="flex flex-col sm:flex-row items-center gap-3 mb-3">
+          <Link href={APP_URL} className="px-10 py-3 rounded font-bold text-sm"
+            style={{ background: 'var(--accent)', color: '#000' }}>
+            無料で始める →
+          </Link>
+          <Link href="/demo" className="px-8 py-3 rounded font-bold text-sm"
+            style={{ border: '1px solid var(--border)', color: 'var(--text)' }}>
+            サンプルを見る
+          </Link>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>クレジットカード不要 · サインイン不要でサンプル閲覧OK</p>
 
-        {/* Dashboard Preview */}
-        <div className="mt-16 w-full max-w-lg rounded-lg overflow-hidden"
+        {/* Dashboard Preview（クリックでサンプルへ） */}
+        <Link href="/demo" className="mt-16 block w-full max-w-lg rounded-lg overflow-hidden group"
           style={{ border: '1px solid var(--border)' }}>
           <div className="flex items-center gap-2 px-4 py-3"
             style={{ background: '#0d0d0d', borderBottom: '1px solid var(--border)' }}>
             <div className="w-3 h-3 rounded-full" style={{ background: '#333' }} />
             <div className="w-3 h-3 rounded-full" style={{ background: '#333' }} />
             <div className="w-3 h-3 rounded-full" style={{ background: '#333' }} />
-            <span className="text-xs ml-2" style={{ color: 'var(--text-dim)' }}>
+            <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>
               {PUBLIC_HOST}/public/yourname
             </span>
+            <span className="text-xs ml-auto" style={{ color: 'var(--accent)' }}>サンプルを開く →</span>
           </div>
           <div className="p-6 text-left" style={{ background: 'var(--bg)' }}>
-            <p className="text-xs tracking-widest mb-1" style={{ color: 'var(--text-dim)' }}>MRR</p>
+            <p className="text-xs tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>MRR</p>
             <p className="text-4xl font-bold mb-4" style={{ color: 'var(--accent)' }}>¥24,500</p>
             <LandingMRRPreview />
             <div className="space-y-2 mt-4">
@@ -70,9 +83,9 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <p className="text-xs mt-4 text-right" style={{ color: 'var(--text-dim)' }}>Powered by INDIEDASH</p>
+            <p className="text-xs mt-4 text-right" style={{ color: 'var(--text-muted)' }}>Powered by INDIEDASH</p>
           </div>
-        </div>
+        </Link>
       </section>
 
       {/* Stripe連携 */}
@@ -91,8 +104,8 @@ export default function LandingPage() {
             ].map(s => (
               <div key={s.step} className="p-5 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                 <p className="text-2xl font-bold mb-3" style={{ color: 'var(--accent)' }}>{s.step}</p>
-                <p className="text-xs font-bold mb-2">{s.title}</p>
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{s.desc}</p>
+                <p className="text-sm font-bold mb-2">{s.title}</p>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{s.desc}</p>
               </div>
             ))}
           </div>
@@ -102,7 +115,7 @@ export default function LandingPage() {
       {/* 課題 */}
       <section className="px-6 py-20 border-t" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-2xl mx-auto">
-          <p className="text-xs tracking-widest mb-8 text-center" style={{ color: 'var(--text-dim)' }}>PROBLEM</p>
+          <p className="text-xs tracking-widest mb-8 text-center" style={{ color: 'var(--text-muted)' }}>PROBLEM</p>
           <div className="space-y-3">
             {[
               '複数アプリの収益をスプレッドシートで管理している',
@@ -123,7 +136,7 @@ export default function LandingPage() {
       {/* 特徴 */}
       <section className="px-6 py-20 border-t" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-2xl mx-auto">
-          <p className="text-xs tracking-widest mb-8 text-center" style={{ color: 'var(--text-dim)' }}>FEATURES</p>
+          <p className="text-xs tracking-widest mb-8 text-center" style={{ color: 'var(--text-muted)' }}>FEATURES</p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {[
               { title: '複数アプリを一元管理', desc: '全プロダクトのMRRをひとつのダッシュボードに集約。プロジェクトごとにグラフで推移を確認。' },
@@ -133,8 +146,8 @@ export default function LandingPage() {
             ].map(f => (
               <div key={f.title} className="p-5 rounded"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                <p className="text-xs font-bold mb-2" style={{ color: 'var(--accent)' }}>{f.title}</p>
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{f.desc}</p>
+                <p className="text-sm font-bold mb-2" style={{ color: 'var(--accent)' }}>{f.title}</p>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{f.desc}</p>
               </div>
             ))}
           </div>
@@ -144,14 +157,14 @@ export default function LandingPage() {
       {/* 価格比較 */}
       <section className="px-6 py-20 border-t" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-2xl mx-auto">
-          <p className="text-xs tracking-widest mb-8 text-center" style={{ color: 'var(--text-dim)' }}>PRICING</p>
+          <p className="text-xs tracking-widest mb-8 text-center" style={{ color: 'var(--text-muted)' }}>PRICING</p>
 
           {/* FREE / PRO 比較 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-16">
             <div className="p-6 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              <p className="text-xs tracking-widest mb-1" style={{ color: 'var(--text-dim)' }}>FREE</p>
+              <p className="text-xs tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>FREE</p>
               <p className="text-2xl font-bold mb-5">¥0</p>
-              <ul className="space-y-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <ul className="space-y-2 text-sm" style={{ color: 'var(--text-muted)' }}>
                 <li>✓ プロジェクト3件まで</li>
                 <li>✓ MRR手動入力</li>
                 <li>✓ 公開URL・OGP画像・Xシェア</li>
@@ -164,7 +177,7 @@ export default function LandingPage() {
               <p className="text-2xl font-bold mb-5" style={{ color: 'var(--accent)' }}>
                 ¥300<span className="text-sm font-normal" style={{ color: 'var(--text-muted)' }}>/月</span>
               </p>
-              <ul className="space-y-2 text-xs" style={{ color: 'var(--text)' }}>
+              <ul className="space-y-2 text-sm" style={{ color: 'var(--text)' }}>
                 <li>✓ プロジェクト無制限</li>
                 <li>✓ Stripe連携で自動更新（無制限）</li>
                 <li>✓ FREEの全機能を含む</li>
@@ -214,7 +227,7 @@ export default function LandingPage() {
           style={{ background: 'var(--accent)', color: '#000' }}>
           無料で始める →
         </Link>
-        <p className="text-xs mt-4" style={{ color: 'var(--text-dim)' }}>クレジットカード不要</p>
+        <p className="text-xs mt-4" style={{ color: 'var(--text-muted)' }}>クレジットカード不要</p>
       </section>
 
       <footer className="border-t py-6 text-center text-xs"

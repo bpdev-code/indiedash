@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { buildAggregateChart } from '@/lib/public-chart'
@@ -26,11 +27,14 @@ export default async function PublicDashboardPage({ params }: Props) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, slug')
+    .select('id, slug, plan')
     .eq('slug', slug)
     .single()
 
   if (!profile) return notFound()
+
+  // PRO はブランディング非表示（閲覧者向けCTAも出さない）
+  const showBranding = profile.plan !== 'pro'
 
   const { data: settings } = await supabase
     .from('public_settings')
@@ -112,12 +116,20 @@ export default async function PublicDashboardPage({ params }: Props) {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
-      <header className="border-b px-6 py-4 flex items-center justify-between"
+      <header className="border-b px-6 py-4 flex items-center justify-between gap-3"
         style={{ borderColor: 'var(--border)' }}>
-        <a href="/" className="text-sm font-bold tracking-wider">
+        <Link href="/" className="text-sm font-bold tracking-wider">
           INDIE<span style={{ color: 'var(--accent)' }}>DASH</span>
-        </a>
-        <span className="text-xs" style={{ color: 'var(--text-dim)' }}>/{slug}</span>
+        </Link>
+        <div className="flex items-center gap-4">
+          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>/{slug}</span>
+          {showBranding && (
+            <Link href="/signup" className="text-xs px-3 py-1.5 rounded font-bold whitespace-nowrap"
+              style={{ background: 'var(--accent)', color: '#000' }}>
+              自分のを作る
+            </Link>
+          )}
+        </div>
       </header>
 
       <main className="flex-1 px-6 py-12 max-w-2xl mx-auto w-full space-y-8">
@@ -194,10 +206,30 @@ export default async function PublicDashboardPage({ params }: Props) {
         <div className="pt-4 border-t text-xs flex items-center justify-between"
           style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}>
           <span>{new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })}</span>
-          <a href="/" className="hover:underline" style={{ color: 'var(--accent)' }}>
+          <Link href="/" className="hover:underline" style={{ color: 'var(--accent)' }}>
             Powered by INDIEDASH
-          </a>
+          </Link>
         </div>
+
+        {/* 閲覧者向けCTA（無料プランのページのみ） */}
+        {showBranding && (
+          <div className="rounded p-6 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <p className="text-sm font-bold mb-1">INDIEDASH なら、これが URL を貼るだけ。</p>
+            <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+              複数アプリの MRR を1画面で管理して、そのまま公開。無料で使えます。
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Link href="/signup" className="inline-block px-6 py-2 rounded font-bold text-sm"
+                style={{ background: 'var(--accent)', color: '#000' }}>
+                無料で始める →
+              </Link>
+              <Link href="/demo" className="inline-block px-5 py-2 rounded text-sm"
+                style={{ border: '1px solid var(--border)', color: 'var(--text)' }}>
+                サンプルを見る
+              </Link>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

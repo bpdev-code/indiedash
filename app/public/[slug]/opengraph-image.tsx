@@ -1,25 +1,12 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@/lib/supabase/server'
 import { buildAggregateChart } from '@/lib/public-chart'
+import { loadOgFont } from '@/lib/og-font'
 
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
 const PUBLIC_HOST = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/^https?:\/\//, '') || 'indiedash.vercel.app'
-
-async function loadFont(): Promise<ArrayBuffer | null> {
-  try {
-    const css = await fetch(
-      'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700',
-      { headers: { 'User-Agent': 'Mozilla/5.0' } }
-    ).then(r => r.text())
-    const match = css.match(/src: url\(([^)]+)\)/)
-    if (!match) return null
-    return fetch(match[1]).then(r => r.arrayBuffer())
-  } catch {
-    return null
-  }
-}
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -92,7 +79,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
   const maxTotal = Math.max(...chartPointsData.map(d => d.actual ?? d.forecast ?? 0), 1)
   const hasHistory = chartPointsData.some(d => d.actual != null || d.forecast != null)
-  const fontData = await loadFont()
+  const fontData = await loadOgFont()
 
   // SVG line chart paths
   const CW = 1056, CH = 72, PX = 6, PY = 6
