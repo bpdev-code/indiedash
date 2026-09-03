@@ -25,6 +25,8 @@ interface Props {
   data: Record<string, string | number | null>[]
   projects: ProjectLine[]
   currentMonth: string
+  // サンプル画面では値を編集するたびに再アニメーションすると気が散るので切れるようにする
+  animate?: boolean
 }
 
 function formatYAxis(v: number) {
@@ -70,7 +72,7 @@ function ChartTooltip({ active, payload, label, currentMonth }: {
   )
 }
 
-export default function MRRChart({ data, projects, currentMonth }: Props) {
+export default function MRRChart({ data, projects, currentMonth, animate = true }: Props) {
   if (data.length === 0 || projects.length === 0) {
     return (
       <div className="flex items-center justify-center h-32 text-xs" style={{ color: 'var(--text-dim)' }}>
@@ -123,6 +125,7 @@ export default function MRRChart({ data, projects, currentMonth }: Props) {
               dot={false}
               activeDot={{ r: 4, fill: p.color }}
               connectNulls={false}
+              isAnimationActive={animate}
             />
             {/* 予測ライン (dashed) */}
             <Line
@@ -136,6 +139,7 @@ export default function MRRChart({ data, projects, currentMonth }: Props) {
               activeDot={{ r: 3, fill: p.color }}
               connectNulls={false}
               strokeOpacity={0.5}
+              isAnimationActive={animate}
             />
             {/* ローンチ月マーカー */}
             {p.launchMonth && p.launchMrr != null && (

@@ -5,67 +5,13 @@ import MRRChart from './mrr-chart'
 import PeriodSelector from './period-selector'
 import ProjectSelector from './project-selector'
 import { DemoImportBanner } from '../_components/demo-import-banner'
+import { buildDashboardView, type RevenueRow } from '@/lib/dashboard-data'
 
 const STATUS_COLOR: Record<string, string> = {
   idea: '#444', dev: '#7C3AED', live: '#00E5FF', archived: '#333',
 }
 const STATUS_LABEL: Record<string, string> = {
   idea: 'IDEA', dev: 'DEV', live: 'LIVE', archived: 'ARCHIVED',
-}
-
-const PERIOD_MONTHS: Record<string, number> = {
-  '3m': 3, '6m': 6, '12m': 12,
-}
-
-function offsetMonth(base: string, offset: number): string {
-  const [y, m] = base.split('-').map(Number)
-  const d = new Date(y, m - 1 + offset, 1)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-}
-
-function monthsDiff(from: string, to: string): number {
-  const [fy, fm] = from.split('-').map(Number)
-  const [ty, tm] = to.split('-').map(Number)
-  return (ty - fy) * 12 + (tm - fm)
-}
-
-// revenue_historyに記録が無い月でも、ローンチ月〜当月の範囲内なら0円として扱う
-// （Stripe連携で「サブスクがまだ無かった月」はそもそもレコードが作られないため、
-// 実績ラインに穴が空いてしまうのを防ぐ）
-function actualOrZero(
-  chartMap: Record<string, Record<string, number>>,
-  month: string,
-  name: string,
-  launchMonth: string | null,
-  currentMonth: string
-): number | null {
-  const recorded = chartMap[month]?.[name]
-  if (recorded != null) return recorded
-  if (launchMonth && month >= launchMonth && month <= currentMonth) return 0
-  return null
-}
-
-// CMGR (Compound Monthly Growth Rate) — 直近の実績ウィンドウの始点・終点から
-// 複利ベースの月次成長率を算出する。単純な月次成長率の算術平均は、MRRのような
-// 複利で積み上がる値の予測には数学的に整合しないため使わない。
-// 参考: CMGR = (終値 / 始値)^(1 / 経過月数) − 1
-//
-// CMGRは始点・終点の2つの値だけで決まる（途中の月は打ち消し合って結果に影響しない）ため、
-// ウィンドウが短いと直近1回の変動（顧客数が少ないと1人の解約でも%が大きく振れる）だけで
-// 将来予測全体が引っ張られてしまう。直近6ヶ月分に広げてその影響を薄め、変化点が
-// 2回未満（＝ノイズが支配的）の場合は横ばい（0%）にフォールバックする。
-function trailingGrowthRate(series: Record<string, number>): number {
-  const months = Object.keys(series).sort()
-  const window = months.slice(-7) // 直近最大7データ点（=6ヶ月分の成長）
-  const periods = window.length - 1
-  if (periods < 2) return 0
-
-  const start = series[window[0]]
-  const end = series[window[window.length - 1]]
-  if (start <= 0) return 0
-
-  const cmgr = Math.pow(end / start, 1 / periods) - 1
-  return Math.max(-0.15, Math.min(0.15, cmgr))
 }
 
 export default async function DashboardPage({
@@ -85,129 +31,19 @@ export default async function DashboardPage({
     .eq('user_id', user.id)
     .order('created_at')
 
-  const liveProjects = (projects ?? []).filter(p => p.status === 'live')
-  const totalMRR = liveProjects.reduce((s, p) => s + (p.mrr || 0), 0)
-  const totalCustomers = liveProjects.reduce((s, p) => s + (p.users_count || 0), 0)
-  const liveIds = liveProjects.map(p => p.id)
-
-  const currentMonth = new Date().toISOString().slice(0, 7)
-  let growthRate: number | null = null
-  let cumulativeMRR = 0
-
-  // Filter to selected project
-  const selectedProject = project !== 'all'
-    ? liveProjects.find(p => p.id === project) ?? null
-    : null
-  const chartProjects = selectedProject
-    ? [{ id: selectedProject.id, name: selectedProject.name, color: selectedProject.color, launchMonth: selectedProject.launch_month, launchMrr: null as number | null }]
-    : liveProjects.map(p => ({ id: p.id, name: p.name, color: p.color, launchMonth: p.launch_month, launchMrr: null as number | null }))
-  const chartIds = chartProjects.map(p => p.id)
-
-  let chartData: Record<string, string | number | null>[] = []
-
-  if (chartIds.length > 0) {
+  const liveIds = (projects ?? []).filter(p => p.status === 'live').map(p => p.id)
+  let history: RevenueRow[] = []
+  if (liveIds.length > 0) {
     const { data: allHistory } = await supabase
       .from('revenue_history')
       .select('month, mrr, project_id')
-      .in('project_id', liveIds) // always fetch all for KPI calculation
+      .in('project_id', liveIds)
       .order('month')
-
-    // Build month→project→mrr map (for all live projects, for KPI)
-    const fullMap: Record<string, Record<string, number>> = {}
-    for (const h of allHistory ?? []) {
-      if (!fullMap[h.month]) fullMap[h.month] = {}
-      const p = liveProjects.find(lp => lp.id === h.project_id)
-      if (p) fullMap[h.month][p.name] = h.mrr
-    }
-
-    const allSorted = Object.entries(fullMap).sort(([a], [b]) => a.localeCompare(b))
-    cumulativeMRR = allSorted.reduce((s, [, vals]) =>
-      s + Object.values(vals).reduce((a, b) => a + b, 0), 0)
-
-    if (allSorted.length >= 2) {
-      const prev = Object.values(allSorted[allSorted.length - 2][1]).reduce((a, b) => a + b, 0)
-      const curr = Object.values(allSorted[allSorted.length - 1][1]).reduce((a, b) => a + b, 0)
-      if (prev > 0) growthRate = ((curr - prev) / prev) * 100
-    }
-
-    // Build chart-specific map (filtered to selected project(s))
-    const chartMap: Record<string, Record<string, number>> = {}
-    for (const h of allHistory ?? []) {
-      if (!chartIds.includes(h.project_id)) continue
-      if (!chartMap[h.month]) chartMap[h.month] = {}
-      const p = chartProjects.find(cp => cp.id === h.project_id)
-      if (p) chartMap[h.month][p.name] = h.mrr
-    }
-
-    // ローンチ月のMRR（グラフ上に●を打つため。データが無ければ0円扱い）
-    for (const p of chartProjects) {
-      p.launchMrr = p.launchMonth ? actualOrZero(chartMap, p.launchMonth, p.name, p.launchMonth, currentMonth) : null
-    }
-
-    // Current MRR per project — 当月の実績が無ければプロジェクトの現在のMRRにフォールバック
-    // （Stripe未同期などで revenue_history に当月分がまだ無いケース）
-    const currentMrrByProject: Record<string, number> = {}
-    const growthRateByProject: Record<string, number> = {}
-    // 当月まで実績が継続入力されているプロジェクトだけ予測を出す（test3のように更新が
-    // 止まっているプロジェクトの予測は、古いデータに基づく信頼できない値になるため出さない）
-    const hasUpToDateActual: Record<string, boolean> = {}
-    for (const p of chartProjects) {
-      const project = liveProjects.find(lp => lp.id === p.id)
-      currentMrrByProject[p.name] = chartMap[currentMonth]?.[p.name] ?? project?.mrr ?? 0
-      hasUpToDateActual[p.name] = chartMap[currentMonth]?.[p.name] != null
-
-      const actualSeries: Record<string, number> = {}
-      for (const [month, vals] of Object.entries(chartMap)) {
-        if (month <= currentMonth && vals[p.name] != null) actualSeries[month] = vals[p.name]
-      }
-      growthRateByProject[p.name] = trailingGrowthRate(actualSeries)
-    }
-
-    // Build month list: centered on current month (or all history if period=all)
-    let months: string[]
-    if (period === 'all') {
-      const histMonths = new Set(Object.keys(chartMap))
-      histMonths.add(currentMonth)
-      for (const p of chartProjects) {
-        if (p.launchMonth) histMonths.add(p.launchMonth)
-      }
-      months = Array.from(histMonths).sort()
-    } else {
-      const n = PERIOD_MONTHS[period] ?? 6
-      const pastCount = Math.floor(n / 2)
-      months = Array.from({ length: n }, (_, i) => offsetMonth(currentMonth, i - pastCount))
-    }
-
-    chartData = months.map(month => {
-      const isFuture = month > currentMonth
-      const entry: Record<string, string | number | null> = { month }
-      for (const p of chartProjects) {
-        const actualMrr = actualOrZero(chartMap, month, p.name, p.launchMonth, currentMonth)
-        if (!isFuture) {
-          entry[p.name] = actualMrr
-          // 当月の点は実績とダミーで同値（点線を実績ラインへ視覚的に繋げるためだけの点）。
-          // ツールチップ側で当月の「予測」表示は別途抑制する（mrr-chart.tsx参照）。
-          entry[`${p.name}_proj`] = month === currentMonth
-            ? (actualMrr ?? currentMrrByProject[p.name])
-            : null
-        } else {
-          entry[p.name] = null
-          const base = currentMrrByProject[p.name]
-          const monthsAhead = monthsDiff(currentMonth, month)
-          const rate = growthRateByProject[p.name] ?? 0
-          entry[`${p.name}_proj`] = hasUpToDateActual[p.name] && base != null
-            ? Math.max(0, Math.round(base * Math.pow(1 + rate, monthsAhead)))
-            : null
-        }
-      }
-      return entry
-    })
+    history = allHistory ?? []
   }
 
-  const growthLabel = growthRate === null ? '—'
-    : `${growthRate >= 0 ? '+' : ''}${growthRate.toFixed(1)}%`
-  const growthColor = growthRate === null ? 'var(--text-dim)'
-    : growthRate >= 0 ? '#10B981' : '#EF4444'
+  const view = buildDashboardView(projects ?? [], history, { period, project })
+  const { liveProjects, chartProjects, chartData, currentMonth } = view
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6 md:space-y-8">
@@ -217,19 +53,19 @@ export default async function DashboardPage({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>MRR</p>
-          <p className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>¥{totalMRR.toLocaleString()}</p>
+          <p className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>¥{view.totalMRR.toLocaleString()}</p>
         </div>
         <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>前月比</p>
-          <p className="text-2xl font-bold" style={{ color: growthColor }}>{growthLabel}</p>
+          <p className="text-2xl font-bold" style={{ color: view.growthColor }}>{view.growthLabel}</p>
         </div>
         <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>累計売上</p>
-          <p className="text-2xl font-bold">¥{cumulativeMRR.toLocaleString()}</p>
+          <p className="text-2xl font-bold">¥{view.cumulativeMRR.toLocaleString()}</p>
         </div>
         <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>顧客数</p>
-          <p className="text-2xl font-bold">{totalCustomers.toLocaleString()}</p>
+          <p className="text-2xl font-bold">{view.totalCustomers.toLocaleString()}</p>
         </div>
       </div>
 

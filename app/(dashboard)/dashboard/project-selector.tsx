@@ -7,9 +7,11 @@ interface Project { id: string; name: string; color: string }
 export default function ProjectSelector({
   projects,
   current,
+  basePath = '/dashboard',
 }: {
   projects: Project[]
   current: string
+  basePath?: string
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -17,7 +19,7 @@ export default function ProjectSelector({
   function select(value: string) {
     const params = new URLSearchParams(searchParams.toString())
     params.set('project', value)
-    router.push(`/dashboard?${params.toString()}`)
+    router.push(`${basePath}?${params.toString()}`)
   }
 
   if (projects.length <= 1) return null

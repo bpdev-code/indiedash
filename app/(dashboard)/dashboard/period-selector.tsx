@@ -9,14 +9,14 @@ const PERIODS = [
   { value: 'all', label: 'ALL' },
 ]
 
-export default function PeriodSelector({ current }: { current: string }) {
+export default function PeriodSelector({ current, basePath = '/dashboard' }: { current: string; basePath?: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   function select(value: string) {
     const params = new URLSearchParams(searchParams.toString())
     params.set('period', value)
-    router.push(`/dashboard?${params.toString()}`)
+    router.push(`${basePath}?${params.toString()}`)
   }
 
   return (
