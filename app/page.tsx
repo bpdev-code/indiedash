@@ -62,7 +62,7 @@ export default function LandingPage() {
             <div className="w-3 h-3 rounded-full" style={{ background: '#333' }} />
             <div className="w-3 h-3 rounded-full" style={{ background: '#333' }} />
             <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>
-              {PUBLIC_HOST}/public/yourname
+              {PUBLIC_HOST}/public/sample
             </span>
             <span className="text-xs ml-auto" style={{ color: 'var(--accent)' }}>サンプルを開く →</span>
           </div>

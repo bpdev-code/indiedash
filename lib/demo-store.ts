@@ -57,16 +57,36 @@ export function sanitizeDemoProjects(raw: unknown): DemoProject[] {
     }))
 }
 
-export function loadDemoProjects(): DemoProject[] {
-  if (typeof window === 'undefined') return demoSeed()
-  try {
-    const stored = window.localStorage.getItem(DEMO_STORAGE_KEY)
-    if (!stored) return demoSeed()
-    const parsed = sanitizeDemoProjects(JSON.parse(stored))
-    return parsed.length > 0 ? parsed : demoSeed()
-  } catch {
-    return demoSeed()
+// DemoProject を buildDashboardView が受け取る形へ変換する（すべて status:'live' 扱い）
+export function demoAsDashProjects(projects: DemoProject[]) {
+  return projects.map(p => ({
+    id: p.id,
+    name: p.name,
+    color: p.color,
+    status: 'live',
+    mrr: p.mrr,
+    users_count: p.customers,
+    launch_month: p.launchMonth,
+  }))
+}
+
+// 本番の backfillRevenueHistory と同じ挙動: ローンチ月〜当月を、現在のMRRで埋める（フラット）。
+// 取り込み後に実際に見えるグラフと一致させるため、擬似的な伸びは入れない。
+export function demoRevenueHistory(projects: DemoProject[]) {
+  const currentMonth = new Date().toISOString().slice(0, 7)
+  const rows: { month: string; mrr: number; project_id: string }[] = []
+  for (const p of projects) {
+    const start = p.launchMonth <= currentMonth ? p.launchMonth : currentMonth
+    let [y, m] = start.split('-').map(Number)
+    const [cy, cm] = currentMonth.split('-').map(Number)
+    let guard = 0
+    while ((y < cy || (y === cy && m <= cm)) && guard++ < 240) {
+      rows.push({ month: `${y}-${String(m).padStart(2, '0')}`, mrr: p.mrr, project_id: p.id })
+      m++
+      if (m > 12) { m = 1; y++ }
+    }
   }
+  return rows
 }
 
 export function saveDemoProjects(projects: DemoProject[]): void {
@@ -117,17 +137,6 @@ export function subscribeDemo(callback: () => void): () => void {
   if (typeof window === 'undefined') return () => {}
   window.addEventListener('storage', callback)
   return () => window.removeEventListener('storage', callback)
-}
-
-export function peekDemoProjects(): DemoProject[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const stored = window.localStorage.getItem(DEMO_STORAGE_KEY)
-    if (!stored) return []
-    return sanitizeDemoProjects(JSON.parse(stored))
-  } catch {
-    return []
-  }
 }
 
 export function clearDemoProjects(): void {
