@@ -92,8 +92,13 @@ export async function createStripeCheckout() {
     try {
       session = await stripe.checkout.sessions.create(checkoutParams)
     } catch (err) {
-      // stripe_customer_id が無効（テスト/本番切り替えや顧客削除など）な場合は作り直して再試行
-      const isMissingCustomer = err instanceof Stripe.errors.StripeInvalidRequestError && err.code === 'resource_missing'
+      // stripe_customer_id が無効（テスト/本番切り替えや顧客削除など）な場合のみ作り直して再試行。
+      // param で「顧客」が原因と確認せずに resource_missing 全般で作り直すと、価格IDなど
+      // 別の理由のエラーでも無駄に新規顧客を量産してしまう
+      const isMissingCustomer =
+        err instanceof Stripe.errors.StripeInvalidRequestError &&
+        err.code === 'resource_missing' &&
+        err.param === 'customer'
       if (!isMissingCustomer) throw err
       customerId = await createNewCustomer()
       session = await stripe.checkout.sessions.create({ ...checkoutParams, customer: customerId })
