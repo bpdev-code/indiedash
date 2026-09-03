@@ -116,7 +116,7 @@ export function DemoApp({ period, project }: { period: string; project: string }
         <main className="flex-1 p-4 md:p-8 overflow-auto pb-24 md:pb-8">
           <div className="max-w-3xl w-full mx-auto space-y-6 md:space-y-8">
 
-            <p className="text-xs rounded px-3 py-2" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+            <p className="text-xs rounded px-3 py-2" style={{ background: '#0a1a1c', border: '1px solid var(--accent)', color: 'var(--accent)' }}>
               サインイン不要のサンプルです。下の数字を自分のプロダクトに置き換えて試せます。
             </p>
 
@@ -225,12 +225,19 @@ export function DemoApp({ period, project }: { period: string; project: string }
         <div className="flex flex-col gap-7 py-6 px-5 h-full">
           <div>
             <div className="text-[9px] tracking-widest mb-3" style={{ color: 'var(--text-dim)' }}>PLAN</div>
-            <div className="text-sm font-bold mb-3">FREE</div>
-            <Link href="/signup?from=demo"
-              className="block w-full text-center text-xs py-2 rounded font-bold"
-              style={{ background: 'var(--accent)', color: '#000' }}>
-              PRO にアップグレード
-            </Link>
+            <div className="text-sm font-bold mb-3">SAMPLE</div>
+            <div className="flex flex-col gap-2">
+              <Link href="/signup?from=demo"
+                className="block w-full text-center text-xs py-2 rounded font-bold"
+                style={{ background: 'var(--accent)', color: '#000' }}>
+                サインイン
+              </Link>
+              <Link href="/login"
+                className="block w-full text-center text-xs py-2 rounded"
+                style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                ログイン
+              </Link>
+            </div>
           </div>
 
           <div>

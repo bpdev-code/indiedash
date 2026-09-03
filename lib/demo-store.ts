@@ -70,21 +70,30 @@ export function demoAsDashProjects(projects: DemoProject[]) {
   }))
 }
 
-// 本番の backfillRevenueHistory と同じ挙動: ローンチ月〜当月を、現在のMRRで埋める（フラット）。
-// 取り込み後に実際に見えるグラフと一致させるため、擬似的な伸びは入れない。
+// サンプル用の月次推移。ローンチ月は現在MRRの ~18%、そこから当月の現在値まで
+// なだらかに増加させる（当月の値は必ず p.mrr に一致 = KPI と揃う）。
+// 本番の backfillRevenueHistory はフラットだが、サンプルでは一直線だと分かりにくいので
+// 伸びのある曲線にしている。
 export function demoRevenueHistory(projects: DemoProject[]) {
   const currentMonth = new Date().toISOString().slice(0, 7)
   const rows: { month: string; mrr: number; project_id: string }[] = []
   for (const p of projects) {
     const start = p.launchMonth <= currentMonth ? p.launchMonth : currentMonth
+    const months: string[] = []
     let [y, m] = start.split('-').map(Number)
     const [cy, cm] = currentMonth.split('-').map(Number)
     let guard = 0
     while ((y < cy || (y === cy && m <= cm)) && guard++ < 240) {
-      rows.push({ month: `${y}-${String(m).padStart(2, '0')}`, mrr: p.mrr, project_id: p.id })
+      months.push(`${y}-${String(m).padStart(2, '0')}`)
       m++
       if (m > 12) { m = 1; y++ }
     }
+    const n = months.length
+    months.forEach((month, i) => {
+      const t = n <= 1 ? 1 : i / (n - 1)
+      const factor = 0.18 + 0.82 * Math.pow(t, 1.5)
+      rows.push({ month, mrr: Math.round(p.mrr * factor), project_id: p.id })
+    })
   }
   return rows
 }
