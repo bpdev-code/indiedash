@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import MRRChart from '@/app/(dashboard)/dashboard/mrr-chart'
+import CumulativeChart from '@/app/(dashboard)/dashboard/cumulative-chart'
 import PeriodSelector from '@/app/(dashboard)/dashboard/period-selector'
 import ProjectSelector from '@/app/(dashboard)/dashboard/project-selector'
 import { buildDashboardView } from '@/lib/dashboard-data'
@@ -38,15 +39,15 @@ export function DemoDashboardView({ period, project }: { period: string; project
           <p className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>¥{view.totalMRR.toLocaleString()}</p>
         </div>
         <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>前月比</p>
+          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>GROWTH</p>
           <p className="text-2xl font-bold" style={{ color: view.growthColor }}>{view.growthLabel}</p>
         </div>
         <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>累計売上</p>
+          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>TOTAL REVENUE</p>
           <p className="text-2xl font-bold">¥{view.cumulativeMRR.toLocaleString()}</p>
         </div>
         <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>顧客数</p>
+          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>CUSTOMERS</p>
           <p className="text-2xl font-bold">{view.totalCustomers.toLocaleString()}</p>
         </div>
       </div>
@@ -64,7 +65,19 @@ export function DemoDashboardView({ period, project }: { period: string; project
             <PeriodSelector basePath="/demo" current={period} />
           </div>
         </div>
-        <MRRChart data={view.chartData} projects={view.chartProjects} currentMonth={view.currentMonth} animate={false} />
+        <MRRChart data={view.chartData} projects={view.chartProjects} currentMonth={view.currentMonth}
+          yCenterValue={view.yCenterValue} animate={false} />
+      </div>
+
+      {/* Cumulative revenue */}
+      <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>TOTAL REVENUE</p>
+        <CumulativeChart
+          data={view.cumulativeChartData}
+          currentMonth={view.currentMonth}
+          color={view.chartProjects.length === 1 ? view.chartProjects[0].color : '#00E5FF'}
+          animate={false}
+        />
       </div>
 
       {/* Live Projects（本番ダッシュボードと同じ表示） */}

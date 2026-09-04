@@ -129,15 +129,15 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           </div>
           <div style={{ display: 'flex', gap: 32 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <span style={{ fontSize: 11, color: '#444', letterSpacing: 2, marginBottom: 6 }}>前月比</span>
+              <span style={{ fontSize: 11, color: '#444', letterSpacing: 2, marginBottom: 6 }}>GROWTH</span>
               <span style={{ fontSize: 30, fontWeight: 700, color: growthColor }}>{growthLabel}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <span style={{ fontSize: 11, color: '#444', letterSpacing: 2, marginBottom: 6 }}>累計売上</span>
+              <span style={{ fontSize: 11, color: '#444', letterSpacing: 2, marginBottom: 6 }}>TOTAL REVENUE</span>
               <span style={{ fontSize: 30, fontWeight: 700, color: '#fff' }}>¥{cumulativeMRR.toLocaleString()}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <span style={{ fontSize: 11, color: '#444', letterSpacing: 2, marginBottom: 6 }}>顧客数</span>
+              <span style={{ fontSize: 11, color: '#444', letterSpacing: 2, marginBottom: 6 }}>CUSTOMERS</span>
               <span style={{ fontSize: 30, fontWeight: 700, color: '#fff' }}>{totalCustomers.toLocaleString()}</span>
             </div>
           </div>

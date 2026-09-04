@@ -27,6 +27,8 @@ interface Props {
   currentMonth: string
   // サンプル画面では値を編集するたびに再アニメーションすると気が散るので切れるようにする
   animate?: boolean
+  // >0 のとき、現在値がほぼ縦軸の中央に来るよう上限を 2倍に寄せる
+  yCenterValue?: number
 }
 
 function formatYAxis(v: number) {
@@ -72,7 +74,7 @@ function ChartTooltip({ active, payload, label, currentMonth }: {
   )
 }
 
-export default function MRRChart({ data, projects, currentMonth, animate = true }: Props) {
+export default function MRRChart({ data, projects, currentMonth, animate = true, yCenterValue = 0 }: Props) {
   if (data.length === 0 || projects.length === 0) {
     return (
       <div className="flex items-center justify-center h-32 text-xs" style={{ color: 'var(--text-dim)' }}>
@@ -105,6 +107,9 @@ export default function MRRChart({ data, projects, currentMonth, animate = true 
           tickLine={false}
           tickFormatter={formatYAxis}
           width={48}
+          domain={yCenterValue > 0
+            ? [0, (dataMax: number) => Math.max(Math.ceil(dataMax * 1.05), yCenterValue * 2)]
+            : [0, 'auto']}
         />
         <Tooltip content={(props) => <ChartTooltip {...props} currentMonth={currentMonth} />} />
         <ReferenceLine

@@ -139,15 +139,15 @@ export default async function PublicDashboardPage({ params }: Props) {
             <p className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>¥{totalMRR.toLocaleString()}</p>
           </div>
           <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>前月比</p>
+            <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>GROWTH</p>
             <p className="text-2xl font-bold" style={{ color: growthColor }}>{growthLabel}</p>
           </div>
           <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>累計売上</p>
+            <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>TOTAL REVENUE</p>
             <p className="text-2xl font-bold">¥{cumulativeMRR.toLocaleString()}</p>
           </div>
           <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>顧客数</p>
+            <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>CUSTOMERS</p>
             <p className="text-2xl font-bold">{totalCustomers.toLocaleString()}</p>
           </div>
         </div>

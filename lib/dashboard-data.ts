@@ -90,8 +90,12 @@ export interface DashboardView {
   growthLabel: string
   growthColor: string
   chartData: Record<string, string | number | null>[]
+  // 累計売上グラフ用（選択スコープの実績月ごとの累計合計）
+  cumulativeChartData: { month: string; total: number }[]
   chartProjects: DashChartProject[]
   liveProjects: DashProject[]
+  // MRRグラフの縦軸を「現在値がほぼ中央」に来るようにするための基準値
+  yCenterValue: number
 }
 
 export function buildDashboardView(
@@ -121,6 +125,8 @@ export function buildDashboardView(
   const chartIds = chartProjects.map(p => p.id)
 
   let chartData: Record<string, string | number | null>[] = []
+  let cumulativeChartData: { month: string; total: number }[] = []
+  let yCenterValue = 0
 
   if (chartIds.length > 0) {
     const allHistory = history.filter(h => liveIds.includes(h.project_id))
@@ -215,6 +221,36 @@ export function buildDashboardView(
       }
       return entry
     })
+
+    // 縦軸センタリング用: 選択スコープの各プロジェクトの現在MRRの最大値
+    yCenterValue = Math.max(0, ...chartProjects.map(p => currentMrrByProject[p.name] ?? 0))
+
+    // 累計売上: プロジェクトごとに history を月順で積み上げ、実績月ごとに合計する
+    const cumByProject: Record<string, { month: string; cum: number }[]> = {}
+    for (const p of chartProjects) {
+      const rows = allHistory
+        .filter(h => h.project_id === p.id)
+        .sort((a, b) => a.month.localeCompare(b.month))
+      let run = 0
+      cumByProject[p.id] = rows.map(r => {
+        run += r.mrr
+        return { month: r.month, cum: run }
+      })
+    }
+    const cumMonths = months.filter(m => m <= currentMonth)
+    cumulativeChartData = cumMonths.map(month => {
+      let total = 0
+      for (const p of chartProjects) {
+        const series = cumByProject[p.id] ?? []
+        let val = 0
+        for (const pt of series) {
+          if (pt.month <= month) val = pt.cum
+          else break
+        }
+        total += val
+      }
+      return { month, total }
+    })
   }
 
   const growthLabel = growthRate === null ? '—'
@@ -230,7 +266,9 @@ export function buildDashboardView(
     growthLabel,
     growthColor,
     chartData,
+    cumulativeChartData,
     chartProjects,
     liveProjects,
+    yCenterValue,
   }
 }

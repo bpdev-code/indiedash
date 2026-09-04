@@ -164,7 +164,7 @@ export function DemoEditProjectView({ id }: { id: string }) {
               className="w-full px-3 py-2 text-sm rounded" />
           </div>
           <div className="flex-1">
-            <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>顧客数</label>
+            <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>CUSTOMERS</label>
             <input type="number" min="0" value={customers}
               onChange={e => { setCustomers(Math.max(0, Math.floor(Number(e.target.value) || 0))); setSavedForm(false) }}
               className="w-full px-3 py-2 text-sm rounded" />

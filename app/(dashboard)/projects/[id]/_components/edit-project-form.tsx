@@ -114,7 +114,7 @@ export function EditProjectForm({
             placeholder="例: 980" className="w-full px-3 py-2 text-sm rounded" />
         </div>
         <div className="flex-1">
-          <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>顧客数</label>
+          <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>CUSTOMERS</label>
           {stripeConnected ? (
             <>
               <p className="px-3 py-2 text-sm rounded" style={{ color: 'var(--text-dim)', border: '1px solid var(--border)' }}>

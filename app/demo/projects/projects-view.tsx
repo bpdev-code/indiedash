@@ -37,15 +37,15 @@ export function DemoProjectsView() {
           <p className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>¥{view.totalMRR.toLocaleString()}</p>
         </div>
         <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>前月比</p>
+          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>GROWTH</p>
           <p className="text-2xl font-bold" style={{ color: view.growthColor }}>{view.growthLabel}</p>
         </div>
         <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>累計売上</p>
+          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>TOTAL REVENUE</p>
           <p className="text-2xl font-bold">¥{view.cumulativeMRR.toLocaleString()}</p>
         </div>
         <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>顧客数</p>
+          <p className="text-[10px] tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>CUSTOMERS</p>
           <p className="text-2xl font-bold">{view.totalCustomers.toLocaleString()}</p>
         </div>
       </div>
@@ -96,7 +96,7 @@ export function DemoProjectsView() {
                   </span>
                 </div>
                 {p.customers > 0 && (
-                  <p className="text-xs mt-1 pl-5" style={{ color: 'var(--text-dim)' }}>{p.customers} 顧客</p>
+                  <p className="text-xs mt-1 pl-5" style={{ color: 'var(--text-dim)' }}>{p.customers} customers</p>
                 )}
               </Link>
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
