@@ -10,6 +10,7 @@ import {
   monthsBetween,
   backfillHistory,
   type DemoStatus,
+  type DemoProject,
 } from '@/lib/demo-store'
 import { useDemoProjects } from '../../use-demo'
 
@@ -58,25 +59,29 @@ export function DemoEditProjectView({ id }: { id: string }) {
     )
   }
 
+  const priceNum = Math.max(0, Math.floor(Number(price) || 0))
+  // 単価が入っていれば MRR = 単価 × 顧客数（常に単価の倍数）。無ければ手入力値。
+  const mrrAuto = priceNum > 0
+  const effectiveMrr = mrrAuto ? priceNum * customers : Math.max(0, Math.floor(mrr))
+
   function saveForm() {
     const current = demoCurrentMonth()
-    const priceNum = Math.floor(Number(price) || 0)
-    // 当月の実績を MRR に合わせ、ローンチ月変更で増えた月を backfill
     const nextHistory = backfillHistory(
-      { ...(project!.history), [current]: mrr },
+      { ...(project!.history), [current]: effectiveMrr },
       launchMonth,
-      mrr,
+      effectiveMrr,
     )
     updateProject(id, {
       name: name.trim().slice(0, 80) || '無名のプロダクト',
       status,
       color,
-      mrr: Math.max(0, Math.floor(mrr)),
+      mrr: effectiveMrr,
       price: priceNum > 0 ? priceNum : null,
       customers: Math.max(0, Math.floor(customers)),
       launchMonth,
       history: nextHistory,
     })
+    setMrr(effectiveMrr)
     setHistoryEdits({ ...nextHistory })
     setSavedForm(true)
     setSavedHistory(false)
@@ -88,12 +93,13 @@ export function DemoEditProjectView({ id }: { id: string }) {
       nextHistory[month] = Math.max(0, Math.floor(historyEdits[month] ?? 0))
     }
     const current = demoCurrentMonth()
-    updateProject(id, {
-      history: nextHistory,
-      // 当月の履歴を編集したら MRR も揃える（本番と同じ挙動）
-      mrr: nextHistory[current] ?? project!.mrr,
-    })
-    if (nextHistory[current] != null) setMrr(nextHistory[current])
+    // 単価×顧客数で自動計算しているときは MRR を履歴で上書きしない
+    const patch: Partial<DemoProject> = { history: nextHistory }
+    if (!mrrAuto && nextHistory[current] != null) {
+      patch.mrr = nextHistory[current]
+      setMrr(nextHistory[current])
+    }
+    updateProject(id, patch)
     setSavedHistory(true)
     setSavedForm(false)
   }
@@ -141,9 +147,15 @@ export function DemoEditProjectView({ id }: { id: string }) {
         <div className="flex gap-3">
           <div className="flex-1">
             <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>MRR (円)</label>
-            <input type="number" min="0" value={mrr}
-              onChange={e => { setMrr(Math.max(0, Math.floor(Number(e.target.value) || 0))); setSavedForm(false) }}
-              className="w-full px-3 py-2 text-sm rounded" />
+            {mrrAuto ? (
+              <p className="px-3 py-2 text-sm rounded" style={{ color: 'var(--text-dim)', border: '1px solid var(--border)' }}>
+                ¥{effectiveMrr.toLocaleString()}
+              </p>
+            ) : (
+              <input type="number" min="0" value={mrr}
+                onChange={e => { setMrr(Math.max(0, Math.floor(Number(e.target.value) || 0))); setSavedForm(false) }}
+                className="w-full px-3 py-2 text-sm rounded" />
+            )}
           </div>
           <div className="flex-1">
             <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>月額単価 (円)</label>
@@ -158,6 +170,9 @@ export function DemoEditProjectView({ id }: { id: string }) {
               className="w-full px-3 py-2 text-sm rounded" />
           </div>
         </div>
+        {mrrAuto && (
+          <p className="text-[10px] -mt-3" style={{ color: 'var(--text-dim)' }}>MRR = 単価 × 顧客数 で自動計算</p>
+        )}
 
         <div>
           <label className="block text-xs mb-1" style={{ color: 'var(--text-dim)' }}>ローンチ月</label>

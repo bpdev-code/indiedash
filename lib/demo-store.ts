@@ -63,15 +63,17 @@ export function backfillHistory(
   return next
 }
 
-// なだらかに伸びる履歴（サンプルのシード用。一直線だと分かりにくいので曲線にする）
-function rampHistory(launchMonth: string, currentMrr: number): Record<string, number> {
+// なだらかに伸びる履歴（サンプルのシード用。一直線だと分かりにくいので曲線にする）。
+// 顧客数を 0→現在値へランプさせ、MRR = 単価 × 顧客数 とするので、値は必ず単価の倍数になる。
+function rampHistory(launchMonth: string, customers: number, price: number): Record<string, number> {
   const months = monthsBetween(launchMonth, demoCurrentMonth())
   const n = months.length
   const h: Record<string, number> = {}
   months.forEach((month, i) => {
     const t = n <= 1 ? 1 : i / (n - 1)
     const factor = 0.18 + 0.82 * Math.pow(t, 1.5)
-    h[month] = Math.round(currentMrr * factor)
+    const cust = Math.max(1, Math.round(customers * factor))
+    h[month] = cust * price
   })
   return h
 }
@@ -82,11 +84,11 @@ export function demoSeed(): DemoProject[] {
   return [
     {
       id: 'seed-1', name: 'タスク管理アプリ', status: 'live', color: '#00E5FF',
-      mrr: 9800, price: 490, customers: 42, launchMonth: a, history: rampHistory(a, 9800),
+      price: 490, customers: 20, mrr: 490 * 20, launchMonth: a, history: rampHistory(a, 20, 490),
     },
     {
       id: 'seed-2', name: '請求書作成ツール', status: 'live', color: '#7C3AED',
-      mrr: 14700, price: 980, customers: 61, launchMonth: b, history: rampHistory(b, 14700),
+      price: 980, customers: 15, mrr: 980 * 15, launchMonth: b, history: rampHistory(b, 15, 980),
     },
   ]
 }

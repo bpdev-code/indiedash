@@ -37,8 +37,10 @@ export function DemoNewProjectView() {
     const name = ((formData.get('name') as string) || '').trim()
     if (!name) { setError('プロジェクト名を入力してください。'); return }
 
-    const mrr = Math.max(0, Math.floor(Number(formData.get('mrr')) || 0))
+    let mrr = Math.max(0, Math.floor(Number(formData.get('mrr')) || 0))
     const priceRaw = Math.floor(Number(formData.get('price')) || 0)
+    // 単価が入っていれば MRR を単価の倍数に丸める
+    if (priceRaw > 0 && mrr > 0) mrr = Math.round(mrr / priceRaw) * priceRaw
 
     const project: DemoProject = {
       id: `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
