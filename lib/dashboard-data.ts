@@ -89,9 +89,9 @@ export interface DashboardView {
   cumulativeMRR: number
   growthLabel: string
   growthColor: string
+  // 各行に per-project MRR / _proj に加えて、右軸用の __cum（実績累計）と
+  // __cumProj（予測累計）を持つ
   chartData: Record<string, string | number | null>[]
-  // 累計売上グラフ用（選択スコープの実績月ごとの累計合計）
-  cumulativeChartData: { month: string; total: number }[]
   chartProjects: DashChartProject[]
   liveProjects: DashProject[]
   // MRRグラフの縦軸を「現在値がほぼ中央」に来るようにするための基準値
@@ -125,7 +125,6 @@ export function buildDashboardView(
   const chartIds = chartProjects.map(p => p.id)
 
   let chartData: Record<string, string | number | null>[] = []
-  let cumulativeChartData: { month: string; total: number }[] = []
   let yCenterValue = 0
 
   if (chartIds.length > 0) {
@@ -197,6 +196,34 @@ export function buildDashboardView(
       months = Array.from({ length: n }, (_, i) => offsetMonth(currentMonth, i - pastCount))
     }
 
+    // 縦軸センタリング用: 選択スコープの各プロジェクトの現在MRRの最大値
+    yCenterValue = Math.max(0, ...chartProjects.map(p => currentMrrByProject[p.name] ?? 0))
+
+    // 累計売上: プロジェクトごとに history を月順で積み上げ、月ごとの合計を出せるようにする
+    const cumByProject: Record<string, { month: string; cum: number }[]> = {}
+    for (const p of chartProjects) {
+      const rows = allHistory
+        .filter(h => h.project_id === p.id)
+        .sort((a, b) => a.month.localeCompare(b.month))
+      let run = 0
+      cumByProject[p.id] = rows.map(r => {
+        run += r.mrr
+        return { month: r.month, cum: run }
+      })
+    }
+    const cumTotalAt = (month: string): number => {
+      let total = 0
+      for (const p of chartProjects) {
+        const series = cumByProject[p.id] ?? []
+        let val = 0
+        for (const pt of series) {
+          if (pt.month <= month) val = pt.cum
+          else break
+        }
+        total += val
+      }
+      return total
+    }
     chartData = months.map(month => {
       const isFuture = month > currentMonth
       const entry: Record<string, string | number | null> = { month }
@@ -219,37 +246,10 @@ export function buildDashboardView(
             : null
         }
       }
+
+      // 累計売上（同じグラフの右軸に載せる。実績のみ、予測は出さない）
+      entry.__cum = isFuture ? null : cumTotalAt(month)
       return entry
-    })
-
-    // 縦軸センタリング用: 選択スコープの各プロジェクトの現在MRRの最大値
-    yCenterValue = Math.max(0, ...chartProjects.map(p => currentMrrByProject[p.name] ?? 0))
-
-    // 累計売上: プロジェクトごとに history を月順で積み上げ、実績月ごとに合計する
-    const cumByProject: Record<string, { month: string; cum: number }[]> = {}
-    for (const p of chartProjects) {
-      const rows = allHistory
-        .filter(h => h.project_id === p.id)
-        .sort((a, b) => a.month.localeCompare(b.month))
-      let run = 0
-      cumByProject[p.id] = rows.map(r => {
-        run += r.mrr
-        return { month: r.month, cum: run }
-      })
-    }
-    const cumMonths = months.filter(m => m <= currentMonth)
-    cumulativeChartData = cumMonths.map(month => {
-      let total = 0
-      for (const p of chartProjects) {
-        const series = cumByProject[p.id] ?? []
-        let val = 0
-        for (const pt of series) {
-          if (pt.month <= month) val = pt.cum
-          else break
-        }
-        total += val
-      }
-      return { month, total }
     })
   }
 
@@ -266,7 +266,6 @@ export function buildDashboardView(
     growthLabel,
     growthColor,
     chartData,
-    cumulativeChartData,
     chartProjects,
     liveProjects,
     yCenterValue,

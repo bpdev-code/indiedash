@@ -3,7 +3,6 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import MRRChart from '@/app/(dashboard)/dashboard/mrr-chart'
-import CumulativeChart from '@/app/(dashboard)/dashboard/cumulative-chart'
 import PeriodSelector from '@/app/(dashboard)/dashboard/period-selector'
 import ProjectSelector from '@/app/(dashboard)/dashboard/project-selector'
 import { buildDashboardView } from '@/lib/dashboard-data'
@@ -66,18 +65,11 @@ export function DemoDashboardView({ period, project }: { period: string; project
           </div>
         </div>
         <MRRChart data={view.chartData} projects={view.chartProjects} currentMonth={view.currentMonth}
-          yCenterValue={view.yCenterValue} animate={false} />
-      </div>
-
-      {/* Cumulative revenue */}
-      <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-        <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>TOTAL REVENUE</p>
-        <CumulativeChart
-          data={view.cumulativeChartData}
-          currentMonth={view.currentMonth}
-          color={view.chartProjects.length === 1 ? view.chartProjects[0].color : '#00E5FF'}
-          animate={false}
-        />
+          yCenterValue={view.yCenterValue} showCumulative animate={false} />
+        <div className="flex items-center gap-4 mt-2 text-[10px]" style={{ color: 'var(--text-dim)' }}>
+          <span>— MRR（左軸）</span>
+          <span style={{ color: '#bbb' }}>— TOTAL REVENUE（右軸）</span>
+        </div>
       </div>
 
       {/* Live Projects（本番ダッシュボードと同じ表示） */}

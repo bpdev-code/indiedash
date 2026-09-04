@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import MRRChart from './mrr-chart'
-import CumulativeChart from './cumulative-chart'
 import PeriodSelector from './period-selector'
 import ProjectSelector from './project-selector'
 import { DemoImportBanner } from '../_components/demo-import-banner'
@@ -79,17 +78,12 @@ export default async function DashboardPage({
             <PeriodSelector current={period} />
           </div>
         </div>
-        <MRRChart data={chartData} projects={chartProjects} currentMonth={currentMonth} yCenterValue={view.yCenterValue} />
-      </div>
-
-      {/* Cumulative revenue */}
-      <div className="p-4 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-        <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>TOTAL REVENUE</p>
-        <CumulativeChart
-          data={view.cumulativeChartData}
-          currentMonth={currentMonth}
-          color={chartProjects.length === 1 ? chartProjects[0].color : '#00E5FF'}
-        />
+        <MRRChart data={chartData} projects={chartProjects} currentMonth={currentMonth}
+          yCenterValue={view.yCenterValue} showCumulative />
+        <div className="flex items-center gap-4 mt-2 text-[10px]" style={{ color: 'var(--text-dim)' }}>
+          <span>— MRR（左軸）</span>
+          <span style={{ color: '#bbb' }}>— TOTAL REVENUE（右軸）</span>
+        </div>
       </div>
 
       {/* Live Projects */}

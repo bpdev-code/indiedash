@@ -29,9 +29,14 @@ interface Props {
   animate?: boolean
   // >0 のとき、現在値がほぼ縦軸の中央に来るよう上限を 2倍に寄せる
   yCenterValue?: number
+  // 右軸に累計売上（__cum / __cumProj）を重ねて表示する
+  showCumulative?: boolean
 }
 
-function formatYAxis(v: number) {
+const CUM_COLOR = '#E5E5E5'
+
+function formatAxis(v: number) {
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
   if (v >= 1000) return `${(v / 1000).toFixed(0)}k`
   return `${v}`
 }
@@ -63,7 +68,9 @@ function ChartTooltip({ active, payload, label, currentMonth }: {
       <p style={{ color: '#888', margin: '0 0 4px' }}>{String(label ?? '')}</p>
       {items.map((entry, i) => {
         const key = String(entry.dataKey ?? '')
-        const displayLabel = key.replace(/_proj$/, ' (予測)')
+        let displayLabel: string
+        if (key === '__cum') displayLabel = '累計'
+        else displayLabel = key.replace(/_proj$/, ' (予測)')
         return (
           <p key={i} style={{ color: entry.color, margin: 0 }}>
             {displayLabel}: ¥{Number(entry.value).toLocaleString()}
@@ -74,7 +81,14 @@ function ChartTooltip({ active, payload, label, currentMonth }: {
   )
 }
 
-export default function MRRChart({ data, projects, currentMonth, animate = true, yCenterValue = 0 }: Props) {
+export default function MRRChart({
+  data,
+  projects,
+  currentMonth,
+  animate = true,
+  yCenterValue = 0,
+  showCumulative = false,
+}: Props) {
   if (data.length === 0 || projects.length === 0) {
     return (
       <div className="flex items-center justify-center h-32 text-xs" style={{ color: 'var(--text-dim)' }}>
@@ -85,7 +99,7 @@ export default function MRRChart({ data, projects, currentMonth, animate = true,
 
   return (
     <ResponsiveContainer width="100%" height={180}>
-      <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+      <ComposedChart data={data} margin={{ top: 8, right: showCumulative ? 4 : 8, left: 0, bottom: 0 }}>
         <defs>
           {projects.map((p, i) => (
             <linearGradient key={p.id} id={`mrr-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
@@ -102,17 +116,31 @@ export default function MRRChart({ data, projects, currentMonth, animate = true,
           tickLine={false}
         />
         <YAxis
+          yAxisId="left"
           tick={{ fontSize: 10, fill: '#444' }}
           axisLine={false}
           tickLine={false}
-          tickFormatter={formatYAxis}
+          tickFormatter={formatAxis}
           width={48}
           domain={yCenterValue > 0
             ? [0, (dataMax: number) => Math.max(Math.ceil(dataMax * 1.05), yCenterValue * 2)]
             : [0, 'auto']}
         />
+        {showCumulative && (
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            tick={{ fontSize: 10, fill: '#555' }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={formatAxis}
+            width={44}
+            domain={[0, 'auto']}
+          />
+        )}
         <Tooltip content={(props) => <ChartTooltip {...props} currentMonth={currentMonth} />} />
         <ReferenceLine
+          yAxisId="left"
           x={currentMonth}
           stroke="#333"
           strokeDasharray="3 3"
@@ -122,6 +150,7 @@ export default function MRRChart({ data, projects, currentMonth, animate = true,
             {/* 実績エリア (フェードするグラデーション塗り) */}
             <Area
               key={`${p.id}-actual`}
+              yAxisId="left"
               type="monotone"
               dataKey={p.name}
               stroke={p.color}
@@ -135,6 +164,7 @@ export default function MRRChart({ data, projects, currentMonth, animate = true,
             {/* 予測ライン (dashed) */}
             <Line
               key={`${p.id}-proj`}
+              yAxisId="left"
               type="monotone"
               dataKey={`${p.name}_proj`}
               stroke={p.color}
@@ -150,6 +180,7 @@ export default function MRRChart({ data, projects, currentMonth, animate = true,
             {p.launchMonth && p.launchMrr != null && (
               <ReferenceDot
                 key={`${p.id}-launch`}
+                yAxisId="left"
                 x={p.launchMonth}
                 y={p.launchMrr}
                 r={4}
@@ -160,6 +191,20 @@ export default function MRRChart({ data, projects, currentMonth, animate = true,
             )}
           </>
         ))}
+        {showCumulative && (
+          /* 累計売上 実績（右軸・白線） */
+          <Line
+            yAxisId="right"
+            type="monotone"
+            dataKey="__cum"
+            stroke={CUM_COLOR}
+            strokeWidth={1.75}
+            dot={false}
+            activeDot={{ r: 3, fill: CUM_COLOR }}
+            connectNulls={false}
+            isAnimationActive={animate}
+          />
+        )}
       </ComposedChart>
     </ResponsiveContainer>
   )
