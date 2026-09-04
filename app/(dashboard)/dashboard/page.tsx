@@ -79,10 +79,11 @@ export default async function DashboardPage({
           </div>
         </div>
         <MRRChart data={chartData} projects={chartProjects} currentMonth={currentMonth}
-          yCenterValue={view.yCenterValue} showCumulative />
+          yCenterValue={view.yCenterValue} showCumulative
+          cumulativeColor={chartProjects.length === 1 ? chartProjects[0].color : '#00E5FF'} />
         <div className="flex items-center gap-4 mt-2 text-[10px]" style={{ color: 'var(--text-dim)' }}>
-          <span>— MRR（左軸）</span>
-          <span style={{ color: '#bbb' }}>— TOTAL REVENUE（右軸）</span>
+          <span>MRR（左軸・実線）</span>
+          <span>TOTAL REVENUE（右軸・点線）</span>
         </div>
       </div>
 

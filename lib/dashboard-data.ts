@@ -181,20 +181,21 @@ export function buildDashboardView(
       growthRateByProject[p.name] = trailingGrowthRate(actualSeries)
     }
 
-    // Build month list: centered on current month (or all history if period=all)
-    let months: string[]
-    if (period === 'all') {
-      const histMonths = new Set(Object.keys(chartMap))
-      histMonths.add(currentMonth)
-      for (const p of chartProjects) {
-        if (p.launchMonth) histMonths.add(p.launchMonth)
-      }
-      months = Array.from(histMonths).sort()
-    } else {
-      const n = PERIOD_MONTHS[period] ?? 6
-      const pastCount = Math.floor(n / 2)
-      months = Array.from({ length: n }, (_, i) => offsetMonth(currentMonth, i - pastCount))
-    }
+    // X軸はローンチ月から描画する。期間セレクタは「先の予測を何ヶ月出すか」を決める。
+    const launchMonths = chartProjects
+      .map(p => p.launchMonth)
+      .filter((m): m is string => !!m && m <= currentMonth)
+      .sort()
+    const earliestLaunch = launchMonths[0] ?? currentMonth
+    const FORECAST_BY_PERIOD: Record<string, number> = { '3m': 2, '6m': 3, '12m': 6, all: 0 }
+    const forecast = FORECAST_BY_PERIOD[period] ?? 3
+    const end = offsetMonth(currentMonth, forecast)
+    // 長すぎる履歴は頭を切って読みやすさを保つ
+    const MAX_SPAN = period === 'all' ? 36 : 18
+    let start = earliestLaunch
+    if (monthsDiff(start, end) > MAX_SPAN) start = offsetMonth(end, -MAX_SPAN)
+    const span = monthsDiff(start, end) + 1
+    const months = Array.from({ length: span }, (_, i) => offsetMonth(start, i))
 
     // 縦軸センタリング用: 選択スコープの各プロジェクトの現在MRRの最大値
     yCenterValue = Math.max(0, ...chartProjects.map(p => currentMrrByProject[p.name] ?? 0))

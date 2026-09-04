@@ -65,10 +65,11 @@ export function DemoDashboardView({ period, project }: { period: string; project
           </div>
         </div>
         <MRRChart data={view.chartData} projects={view.chartProjects} currentMonth={view.currentMonth}
-          yCenterValue={view.yCenterValue} showCumulative animate={false} />
+          yCenterValue={view.yCenterValue} showCumulative animate={false}
+          cumulativeColor={view.chartProjects.length === 1 ? view.chartProjects[0].color : '#00E5FF'} />
         <div className="flex items-center gap-4 mt-2 text-[10px]" style={{ color: 'var(--text-dim)' }}>
-          <span>— MRR（左軸）</span>
-          <span style={{ color: '#bbb' }}>— TOTAL REVENUE（右軸）</span>
+          <span>MRR（左軸・実線）</span>
+          <span>TOTAL REVENUE（右軸・点線）</span>
         </div>
       </div>
 

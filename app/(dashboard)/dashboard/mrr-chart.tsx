@@ -29,11 +29,11 @@ interface Props {
   animate?: boolean
   // >0 のとき、現在値がほぼ縦軸の中央に来るよう上限を 2倍に寄せる
   yCenterValue?: number
-  // 右軸に累計売上（__cum / __cumProj）を重ねて表示する
+  // 右軸に累計売上（__cum）を重ねて表示する
   showCumulative?: boolean
+  // 累計売上ラインの色（未指定はアクセント）
+  cumulativeColor?: string
 }
-
-const CUM_COLOR = '#E5E5E5'
 
 function formatAxis(v: number) {
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
@@ -88,6 +88,7 @@ export default function MRRChart({
   animate = true,
   yCenterValue = 0,
   showCumulative = false,
+  cumulativeColor = '#00E5FF',
 }: Props) {
   if (data.length === 0 || projects.length === 0) {
     return (
@@ -107,6 +108,10 @@ export default function MRRChart({
               <stop offset="100%" stopColor={p.color} stopOpacity={0} />
             </linearGradient>
           ))}
+          <linearGradient id="cum-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={cumulativeColor} stopOpacity={0.18} />
+            <stop offset="100%" stopColor={cumulativeColor} stopOpacity={0} />
+          </linearGradient>
         </defs>
         <CartesianGrid stroke="#1a1a1a" vertical={false} />
         <XAxis
@@ -192,15 +197,17 @@ export default function MRRChart({
           </>
         ))}
         {showCumulative && (
-          /* 累計売上 実績（右軸・白線） */
-          <Line
+          /* 累計売上 実績（右軸） */
+          <Area
             yAxisId="right"
             type="monotone"
             dataKey="__cum"
-            stroke={CUM_COLOR}
-            strokeWidth={1.75}
+            stroke={cumulativeColor}
+            strokeWidth={2}
+            strokeDasharray="1 3"
+            fill="url(#cum-grad)"
             dot={false}
-            activeDot={{ r: 3, fill: CUM_COLOR }}
+            activeDot={{ r: 3, fill: cumulativeColor }}
             connectNulls={false}
             isAnimationActive={animate}
           />
